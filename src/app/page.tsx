@@ -51,7 +51,7 @@ export default function LandingPage() {
             {/* CTAs de Ação Oficiais */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link
-                href="/casos"
+                href="/login"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[4px] bg-[#A6193C] text-white font-medium text-sm hover:bg-[#7E122D] transition-colors"
               >
                 <span>Acessar Esteira de Casos</span>
@@ -412,7 +412,7 @@ export default function LandingPage() {
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/casos"
+              href="/login"
               className="px-5 py-2.5 rounded-[4px] bg-[#A6193C] text-white font-medium text-sm hover:bg-[#7E122D] transition-colors"
             >
               Acessar Plataforma Agora

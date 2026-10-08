@@ -181,3 +181,32 @@
 .btn-bnb-secundario:hover {
   background-color: var(--fundo);
 }
+
+/* Animação suave para as palavras no banner de login */
+.palavras > span {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.4em);
+  animation: palavra 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+@keyframes palavra {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .palavras > span {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Indicador de foco padrão */
+:focus-visible {
+  outline: 3px solid #F28C00;
+  outline-offset: 2px;
+}
