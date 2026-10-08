@@ -1,0 +1,14 @@
+{
+  "documento": {
+    "id": "GUIA_ANPEI",
+    "titulo": "O que é inovação para a Lei do Bem",
+    "tipo": "GUIA",
+    "orgao": "ANPEI / MCTIC",
+    "url": "https://www.gov.br/mcti/pt-br/acompanhe-o-mcti/lei-do-bem/arquivo/pdf/8705_LEI_DO_BEM___O_que_e_inovacao_para_a_Lei_do_Bem_convertido__ANPEI__MCTIC.pdf"
+  },
+  "versaoCorpus": "2026.1",
+  "total": 0,
+  "normas": [],
+  "statusExtracao": "NAO_EXTRAIDO",
+  "motivo": "Documento diagramado em colunas: a extração automática de texto embaralha a ordem de leitura em boa parte das páginas. Nenhum dispositivo foi derivado dele porque uma citação corrompida não pode sustentar um parecer de defesa. Para usar este guia, transcreva manualmente o trecho desejado do PDF e acrescente aqui no mesmo schema das demais normas. Seções mais úteis: 2.1 a 2.5 (as cinco categorias de PD&I), 3.1 a 3.3 (os três campos do FORMP&D), 4.1 (conceito de engenharia x P&D) e 4.4 (melhorias de produtos, processos, sistemas e serviços)."
+}

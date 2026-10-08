@@ -1,0 +1,93 @@
+{
+  "documento": {
+    "id": "GUIA_MCTI",
+    "titulo": "Guia Prático da Lei do Bem (2020)",
+    "tipo": "GUIA",
+    "orgao": "Ministério da Ciência, Tecnologia e Inovações",
+    "url": ""
+  },
+  "versaoCorpus": "2026.1",
+  "total": 3,
+  "normas": [
+    {
+      "id": "GUIAMCTI-6.2",
+      "fonte": "GUIA_MCTI",
+      "dispositivo": "Item 6.2",
+      "ementa": "FORMP&D — Elemento tecnologicamente novo ou inovador da atividade",
+      "texto": "6.2. Elemento Tecnologicamente Novo ou Inovador da Atividade ......................19",
+      "tags": [
+        "formpd",
+        "elemento-novo",
+        "redacao"
+      ],
+      "criteriosRelacionados": [
+        1
+      ],
+      "categoriasRelacionadas": [],
+      "vigenciaInicio": "2020-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "",
+      "procedencia": {
+        "documento": "Guia Prático da Lei do Bem (2020)",
+        "orgao": "Ministério da Ciência, Tecnologia e Inovações",
+        "arquivoOrigem": "guiamcti.pdf",
+        "extraidoLiteralmente": true
+      }
+    },
+    {
+      "id": "GUIAMCTI-6.3",
+      "fonte": "GUIA_MCTI",
+      "dispositivo": "Item 6.3",
+      "ementa": "FORMP&D — Barreira ou desafio tecnológico superável",
+      "texto": "6.3. Barreira ou Desafio Tecnológico Superável .......................................................20",
+      "tags": [
+        "formpd",
+        "barreira-tecnologica",
+        "incerteza"
+      ],
+      "criteriosRelacionados": [
+        3
+      ],
+      "categoriasRelacionadas": [],
+      "vigenciaInicio": "2020-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "",
+      "procedencia": {
+        "documento": "Guia Prático da Lei do Bem (2020)",
+        "orgao": "Ministério da Ciência, Tecnologia e Inovações",
+        "arquivoOrigem": "guiamcti.pdf",
+        "extraidoLiteralmente": true
+      }
+    },
+    {
+      "id": "GUIAMCTI-GLOSA",
+      "fonte": "GUIA_MCTI",
+      "dispositivo": "Nota de rodapé 1 (item 9.1)",
+      "ementa": "ALERTA: a aplicação equivocada dos conceitos de PA, PB e DE é o principal motivo de glosa",
+      "texto": "A aplicação equivocada dos conceitos de PA, PB e DE é o principal motivo de glosa",
+      "tags": [
+        "glosa",
+        "categoria-pdi",
+        "risco"
+      ],
+      "criteriosRelacionados": [],
+      "categoriasRelacionadas": [
+        "PB",
+        "PA",
+        "DE"
+      ],
+      "vigenciaInicio": "2020-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "Justifica a obrigatoriedade de classificar a categoria PD&I no parecer.",
+      "procedencia": {
+        "documento": "Guia Prático da Lei do Bem (2020)",
+        "orgao": "Ministério da Ciência, Tecnologia e Inovações",
+        "arquivoOrigem": "guiamcti.pdf",
+        "extraidoLiteralmente": true
+      }
+    }
+  ]
+}

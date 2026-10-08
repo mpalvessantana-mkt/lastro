@@ -1,0 +1,292 @@
+{
+  "documento": {
+    "id": "FRASCATI",
+    "titulo": "Manual de Frascati 2002 (6ª edição) — tradução em português",
+    "tipo": "MANUAL_INTERNACIONAL",
+    "orgao": "OCDE",
+    "url": "https://antigo.mctic.gov.br/mctic/export/sites/institucional/indicadores/detalhe/Manuais/OCDE-Manual-Frascati-em-portugues-Brasil.pdf"
+  },
+  "versaoCorpus": "2026.1",
+  "total": 10,
+  "normas": [
+    {
+      "id": "FRASCATI-P63",
+      "fonte": "FRASCATI",
+      "dispositivo": "§ 63 (seção 2.1)",
+      "ementa": "Definição de P&D: trabalho criativo empregado de forma sistemática",
+      "texto": "A pesquisa e o desenvolvimento experimental (P&D) incluem o trabalho criativo empregado de forma sistemática, com o objetivo de aumentar o volume de conhecimentos, abrangendo o conhecimento do homem, da cultura e da sociedade, bem como a utilização desses conhecimentos para novas aplicações.",
+      "tags": [
+        "definicao-pd",
+        "criatividade",
+        "sistematicidade"
+      ],
+      "criteriosRelacionados": [
+        2,
+        4
+      ],
+      "categoriasRelacionadas": [],
+      "vigenciaInicio": "2002-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "",
+      "procedencia": {
+        "documento": "Manual de Frascati 2002 (6ª edição) — tradução em português",
+        "orgao": "OCDE",
+        "arquivoOrigem": "frascati.pdf",
+        "extraidoLiteralmente": true
+      }
+    },
+    {
+      "id": "FRASCATI-P64",
+      "fonte": "FRASCATI",
+      "dispositivo": "§ 64 (seção 2.1)",
+      "ementa": "As três atividades de P&D: pesquisa básica, pesquisa aplicada e desenvolvimento experimental",
+      "texto": "O termo P&D abrange três atividades: a pesquisa básica, a pesquisa aplicada e o desenvolvimento experimental. Essas atividades são descritas em detalhes no capítulo 4. A pesquisa básica consiste em trabalhos experimentais ou teóricos desenvolvidos principalmente com a finalidade de adquirir novos conhecimentos sobre os fundamentos de fenômenos e fatos observáveis, sem considerar uma aplicação ou uso particular. A pesquisa aplicada consiste igualmente em trabalhos originais empreendidos com o objetivo de adquirir novos conhecimentos. No entanto, ela é principalmente direcionada a um objetivo prático determinado. O desenvolvimento experimental consiste em trabalhos sistemáticos com base em conhecimentos existentes obtidos pela pesquisa ou experiência prática, para lançar a fabricação de novos materiais, produtos ou dispositivos, para estabelecer novos procedimentos, sistemas e serviços ou para melhorar os já existentes em P&D. Inclui tanto a P&D formal quanto a P&D informal ou ocasionalmente outras unidades. Definições e convenções básicas 39",
+      "tags": [
+        "categoria-pdi",
+        "definicao-pd"
+      ],
+      "criteriosRelacionados": [
+        1
+      ],
+      "categoriasRelacionadas": [
+        "PB",
+        "PA",
+        "DE"
+      ],
+      "vigenciaInicio": "2002-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "",
+      "procedencia": {
+        "documento": "Manual de Frascati 2002 (6ª edição) — tradução em português",
+        "orgao": "OCDE",
+        "arquivoOrigem": "frascati.pdf",
+        "extraidoLiteralmente": true
+      }
+    },
+    {
+      "id": "FRASCATI-P84",
+      "fonte": "FRASCATI",
+      "dispositivo": "§ 84 (seção 2.3.1)",
+      "ementa": "CRITÉRIO FUNDAMENTAL: elemento de novidade não insignificante e dissipação de incerteza científica ou tecnológica — a solução não parece óbvia a quem domina o conhecimento do setor",
+      "texto": "O critério fundamental que permite distinguir entre P&D e as atividades correlatas é a existência em P&D de um elemento de novidade, não insignificante, e a dissipação de incerteza científica ou tecnológica, em outras palavras, quando a solução de um problema não parece óbvia para alguém que está perfeitamente ciente de todo o conjunto de conhecimento e técnicas básicas comumente utilizadas no setor considerado. A tabela 2.1 adiciona certos critérios para distinguir o que é excluído de P&D.",
+      "tags": [
+        "criterio-fundamental",
+        "novidade",
+        "incerteza",
+        "estado-da-tecnica"
+      ],
+      "criteriosRelacionados": [
+        1,
+        3
+      ],
+      "categoriasRelacionadas": [],
+      "vigenciaInicio": "2002-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "É o dispositivo mais citado do corpus. Define o teste do especialista: a solução não pode parecer óbvia para alguém que domina o conhecimento e as técnicas comuns do setor.",
+      "procedencia": {
+        "documento": "Manual de Frascati 2002 (6ª edição) — tradução em português",
+        "orgao": "OCDE",
+        "arquivoOrigem": "frascati.pdf",
+        "extraidoLiteralmente": true
+      }
+    },
+    {
+      "id": "FRASCATI-TAB21",
+      "fonte": "FRASCATI",
+      "dispositivo": "Tabela 2.1 (seção 2.3.1)",
+      "ementa": "Perguntas complementares que distinguem P&D de atividades correlatas",
+      "texto": "Quais são os objetivos do projeto? Existe um elemento novo ou inovador neste projeto? Ele se baseia nos fenômenos, em estruturas ou em relações desconhecidas até agora? Consiste na aplicação de uma maneira nova de conhecimento ou de técnicas já conhecidas? Existe uma forte possibilidade de que o projeto resulte em uma nova compreensão (mais ampla e aprofundada) dos fenômenos, das relações ou dos princípios de tratamento suscetíveis de interessar a mais de uma organização? Acredita-se que os resultados serão patenteados? Que pessoal trabalha no projeto? Quais são os métodos utilizados? Que programa financia o projeto? De que maneira as conclusões ou os resultados deste projeto terão um caráter geral? Será mais natural classificar o projeto em outra categoria de atividade científica, tecnológica ou industrial?",
+      "tags": [
+        "criterio-fundamental",
+        "checklist"
+      ],
+      "criteriosRelacionados": [
+        1,
+        2,
+        5
+      ],
+      "categoriasRelacionadas": [],
+      "vigenciaInicio": "2002-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "",
+      "procedencia": {
+        "documento": "Manual de Frascati 2002 (6ª edição) — tradução em português",
+        "orgao": "OCDE",
+        "arquivoOrigem": "frascati.pdf",
+        "extraidoLiteralmente": true
+      }
+    },
+    {
+      "id": "FRASCATI-P135",
+      "fonte": "FRASCATI",
+      "dispositivo": "§ 135 (seção 2.4.1)",
+      "ementa": "SOFTWARE: projeto de desenvolvimento de software só é P&D se sua conclusão exigir progresso científico ou tecnológico e dissipar incerteza de forma sistemática",
+      "texto": "Para que um projeto de desenvolvimento de software seja classificado em P&D, sua conclusão exige um progresso científico e/ou tecnológico e ele deve ter por objetivo dissipar a incerteza científica ou tecnológica de uma forma sistemática.",
+      "tags": [
+        "software",
+        "progresso-tecnologico",
+        "incerteza",
+        "sistematicidade"
+      ],
+      "criteriosRelacionados": [
+        1,
+        3,
+        4
+      ],
+      "categoriasRelacionadas": [],
+      "vigenciaInicio": "2002-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "Dispositivo central para projetos de TI bancária.",
+      "procedencia": {
+        "documento": "Manual de Frascati 2002 (6ª edição) — tradução em português",
+        "orgao": "OCDE",
+        "arquivoOrigem": "frascati.pdf",
+        "extraidoLiteralmente": true
+      }
+    },
+    {
+      "id": "FRASCATI-P137",
+      "fonte": "FRASCATI",
+      "dispositivo": "§ 137 (seção 2.4.1)",
+      "ementa": "SOFTWARE: nova versão, adição ou modificação só é P&D se incorporar progresso que enriqueça o conhecimento; usar software para nova finalidade não é progresso",
+      "texto": "O desenvolvimento de softwares, por sua natureza, não permite discernir facilmente e identificar o elemento de P&D onde este não existe. Ele é parte integrante de muitos projetos que não fazem parte, eles mesmos, de nenhum elemento de P&D. No entanto, o aspecto destes projetos ligados ao desenvolvimento de softwares pode ser classificado em P&D se ele resulta em um progresso no campo de softwares. Destas melhorias, normalmente, procede uma evolução em vez de uma revolução. É por isso que a transição para uma versão mais poderosa, uma adição ou uma modificação de um programa ou de um sistema existente podem ser classificadas como P&D, se elas incorporam os progressos científicos e/ou tecnológicos que levam a um enriquecimento do conhecimento. O uso do software para um aplicativo ou para um novo propósito não constitui em si mesmo um progresso.",
+      "tags": [
+        "software",
+        "novidade",
+        "rotina",
+        "versao"
+      ],
+      "criteriosRelacionados": [
+        1,
+        2
+      ],
+      "categoriasRelacionadas": [],
+      "vigenciaInicio": "2002-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "Fundamenta a recusa de projetos de atualização de versão e de aplicação de solução existente a nova finalidade.",
+      "procedencia": {
+        "documento": "Manual de Frascati 2002 (6ª edição) — tradução em português",
+        "orgao": "OCDE",
+        "arquivoOrigem": "frascati.pdf",
+        "extraidoLiteralmente": true
+      }
+    },
+    {
+      "id": "FRASCATI-P138",
+      "fonte": "FRASCATI",
+      "dispositivo": "§ 138 (seção 2.4.1)",
+      "ementa": "SOFTWARE: a falha pode ser P&D — projeto não concluído que mostra que uma abordagem não dará resultados aumenta o conhecimento",
+      "texto": "Um progresso científico e/ou tecnológico é possível em matéria de software e pode ser realizado mesmo se um projeto não é concluído no prazo. Na verdade, uma falha pode aumentar os conhecimentos que temos da tecnologia de software, ao mostrar que uma abordagem especial não dará resultados.",
+      "tags": [
+        "software",
+        "insucesso",
+        "incerteza"
+      ],
+      "criteriosRelacionados": [
+        3
+      ],
+      "categoriasRelacionadas": [],
+      "vigenciaInicio": "2002-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "Fundamento normativo literal da regra: resultado desfavorável pode ser P&D. Sustenta a classe 'Com ressalvas' quando o projeto falhou no objetivo mas investigou de fato.",
+      "procedencia": {
+        "documento": "Manual de Frascati 2002 (6ª edição) — tradução em português",
+        "orgao": "OCDE",
+        "arquivoOrigem": "frascati.pdf",
+        "extraidoLiteralmente": true
+      }
+    },
+    {
+      "id": "FRASCATI-P140",
+      "fonte": "FRASCATI",
+      "dispositivo": "§ 140 (seção 2.4.1)",
+      "ementa": "SOFTWARE — LISTA DO QUE É P&D: novos teoremas e algoritmos, avanços em sistemas e linguagens, métodos de concepção e desenvolvimento, IA e tratamento de informação",
+      "texto": "A lista a seguir dá exemplos de elementos de P&D integrados de no software. Devem ser incluídos na medição do P&D: • P&D levando a novos teoremas e algoritmos no meio de teoria da Definições e convenções básicas 61 computação. • Avanços nas tecnologias da informação sobre o plano de sistemas operacionais, linguagens de programação, da gestão de dados, softwares de comunicação e de ferramentas de desenvolvimento de softwares. • O desenvolvimento da tecnologia de internet. • A busca de métodos de concepção, desenvolvimento, instalação e manutenção de softwares. • Desenvolvimento de software levando a progressos nos métodos genéricos de coleta, transmissão, armazenamento, extração, de manipulação e exibição de dados. • Desenvolvimento experimental para preencher lacunas nos conhecimentos tecnológicos que são necessários para o desenvolvimento de um programa ou sistema. • P&D sobre ferramentas de softwares ou tecnologias em áreas especializadas do tratamento da informação (tratamento de imagens por computador, apresentação de dados geográficos, de reconhecimento de caracteres, inteligência artificial etc.).",
+      "tags": [
+        "software",
+        "exemplos-elegiveis",
+        "algoritmo",
+        "inteligencia-artificial"
+      ],
+      "criteriosRelacionados": [
+        1,
+        2
+      ],
+      "categoriasRelacionadas": [],
+      "vigenciaInicio": "2002-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "",
+      "procedencia": {
+        "documento": "Manual de Frascati 2002 (6ª edição) — tradução em português",
+        "orgao": "OCDE",
+        "arquivoOrigem": "frascati.pdf",
+        "extraidoLiteralmente": true
+      }
+    },
+    {
+      "id": "FRASCATI-P141",
+      "fonte": "FRASCATI",
+      "dispositivo": "§ 141 (seção 2.4.1)",
+      "ementa": "SOFTWARE — LISTA DO QUE NÃO É P&D: uso de métodos e ferramentas conhecidos, suporte, conversão, adaptação de software existente, depuração, documentação de usuário",
+      "texto": "As atividades relacionadas ao software, que não saíram de nenhum progresso científico e/ou tecnológico e não permitem dissipar certas incertezas técnicas, não são incluídas em P&D. Aqui estão alguns exemplos: • O desenvolvimento de aplicativos e sistemas de informação para as empresas que usam conhecidos métodos e ferramentas de software existentes. • O suporte de sistemas no local. • A conversão ou a tradução em linguagem de máquina. • Adicionar programas de funcionalidade específica do aplicativo ao usuário. • Depuração de sistemas. • A adaptação do software existente. • A criação da documentação do usuário.",
+      "tags": [
+        "software",
+        "exemplos-nao-elegiveis",
+        "rotina",
+        "manutencao",
+        "configuracao"
+      ],
+      "criteriosRelacionados": [
+        1,
+        2,
+        3
+      ],
+      "categoriasRelacionadas": [],
+      "vigenciaInicio": "2002-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "Casa diretamente com os projetos classificados como Não elegível na base de referência: configuração de produto contratado, correção de defeito, migração e adaptação.",
+      "procedencia": {
+        "documento": "Manual de Frascati 2002 (6ª edição) — tradução em português",
+        "orgao": "OCDE",
+        "arquivoOrigem": "frascati.pdf",
+        "extraidoLiteralmente": true
+      }
+    },
+    {
+      "id": "FRASCATI-P249",
+      "fonte": "FRASCATI",
+      "dispositivo": "§ 249 (seção 4.2)",
+      "ementa": "Definição detalhada de desenvolvimento experimental",
+      "texto": "O desenvolvimento experimental consiste em trabalhos sistemáticos baseados nos conhecimentos existentes obtidos por pesquisa e/ou experiência prática, tendo em vista a fabricação de novos materiais, produtos ou dispositivos, para estabelecer novos processos, sistemas e serviços ou melhorar consideravelmente os já existentes.",
+      "tags": [
+        "categoria-pdi",
+        "desenvolvimento-experimental"
+      ],
+      "criteriosRelacionados": [
+        4
+      ],
+      "categoriasRelacionadas": [
+        "DE"
+      ],
+      "vigenciaInicio": "2002-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "",
+      "procedencia": {
+        "documento": "Manual de Frascati 2002 (6ª edição) — tradução em português",
+        "orgao": "OCDE",
+        "arquivoOrigem": "frascati.pdf",
+        "extraidoLiteralmente": true
+      }
+    }
+  ]
+}

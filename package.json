@@ -1,0 +1,38 @@
+{
+  "name": "lastro",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "validar": "tsx scripts/validar-motor.ts",
+    "seed:normas": "tsx scripts/seed-normas.ts"
+  },
+  "dependencies": {
+    "@google/genai": "^2.28.0",
+    "firebase": "^13.0.0",
+    "jszip": "^3.10.2",
+    "lucide-react": "^1.52.0",
+    "next": "16.4.0",
+    "papaparse": "^5.7.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "xlsx": "^0.18.5",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.16.2",
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^20",
+    "@types/papaparse": "^5.5.2",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.0",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  }
+}

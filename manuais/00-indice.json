@@ -1,0 +1,62 @@
+{
+  "versaoCorpus": "2026.1",
+  "geradoEm": "2026-10-07",
+  "totalNormas": 40,
+  "observacao": "Todo campo 'texto' foi fatiado literalmente do PDF de origem e validado por comparação normalizada. Nenhum dispositivo foi redigido de memória.",
+  "documentos": [
+    {
+      "id": "LEI_11196",
+      "titulo": "Lei nº 11.196, de 21 de novembro de 2005 — Capítulo III (Lei do Bem)",
+      "tipo": "LEI",
+      "orgao": "Presidência da República",
+      "url": "https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2005/lei/l11196compilado.htm",
+      "arquivo": "lei11196.pdf",
+      "normasDerivadas": 9
+    },
+    {
+      "id": "IN_RFB_1187",
+      "titulo": "Instrução Normativa RFB nº 1.187, de 29 de agosto de 2011",
+      "tipo": "INSTRUCAO_NORMATIVA",
+      "orgao": "Receita Federal do Brasil",
+      "url": "",
+      "arquivo": "in1187.pdf",
+      "normasDerivadas": 15
+    },
+    {
+      "id": "FRASCATI",
+      "titulo": "Manual de Frascati 2002 (6ª edição) — tradução em português",
+      "tipo": "MANUAL_INTERNACIONAL",
+      "orgao": "OCDE",
+      "url": "https://antigo.mctic.gov.br/mctic/export/sites/institucional/indicadores/detalhe/Manuais/OCDE-Manual-Frascati-em-portugues-Brasil.pdf",
+      "arquivo": "frascati.pdf",
+      "normasDerivadas": 10
+    },
+    {
+      "id": "GUIA_MCTI",
+      "titulo": "Guia Prático da Lei do Bem (2020)",
+      "tipo": "GUIA",
+      "orgao": "Ministério da Ciência, Tecnologia e Inovações",
+      "url": "",
+      "arquivo": "guiamcti.pdf",
+      "normasDerivadas": 3
+    },
+    {
+      "id": "GUIA_ANPEI",
+      "titulo": "O que é inovação para a Lei do Bem",
+      "tipo": "GUIA",
+      "orgao": "ANPEI / MCTIC",
+      "url": "https://www.gov.br/mcti/pt-br/acompanhe-o-mcti/lei-do-bem/arquivo/pdf/8705_LEI_DO_BEM___O_que_e_inovacao_para_a_Lei_do_Bem_convertido__ANPEI__MCTIC.pdf",
+      "arquivo": "anpei.pdf",
+      "normasDerivadas": 0
+    },
+    {
+      "id": "GUIA_DESAFIO",
+      "titulo": "Guia do Desafio — Hackathon STS 2026",
+      "tipo": "REGRA_DO_EVENTO",
+      "orgao": "Banco do Nordeste / SEBRAE",
+      "url": "",
+      "arquivo": "desafio.pdf",
+      "normasDerivadas": 3
+    }
+  ]
+}

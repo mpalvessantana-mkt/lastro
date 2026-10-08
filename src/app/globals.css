@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* 4.1 Camada de marca — do brand book BNB */
+    --marca-granada: #A6193C;
+    --marca-granada-escuro: #7E122D;
+    --marca-laranja: #FF8A22;
+
+    /* 4.2 Camada de superfície */
+    --papel: #FFFFFF;
+    --fundo: #F3F3F1;
+    --filete: #E0DEDA;
+    --filete-forte: #C9C6C1;
+    --tinta: #231F20;
+    --tinta-media: #6B6762;
+    --tinta-fraca: #96918A;
+
+    /* 4.3 Camada semântica — as quatro classes */
+    --classe-elegivel: #2F6B4F;
+    --classe-ressalvas: #B06C1E;
+    --classe-nao-elegivel: #52504E;
+    --classe-insuficiente: #3A5A78;
+
+    /* 4.4 Alerta */
+    --alerta: #C2410C;
+    --alerta-fundo: #FDF4EC;
+
+    /* 5. Tipografia */
+    --fonte-ui: "Heebo", system-ui, -apple-system, sans-serif;
+    --fonte-doc: "Spectral", Georgia, serif;
+    --fonte-id: "IBM Plex Mono", ui-monospace, monospace;
+
+    /* Raio e Espaçamento */
+    --raio: 4px;
+    --e1: 4px;
+    --e2: 8px;
+    --e3: 12px;
+    --e4: 16px;
+    --e5: 24px;
+    --e6: 32px;
+    --e7: 48px;
+
+    /* Elevação Real */
+    --elevado: 0 2px 8px rgba(35, 31, 32, 0.12);
+  }
+
+  body {
+    background-color: var(--fundo);
+    color: var(--tinta);
+    font-family: var(--fonte-ui);
+    font-size: 14px;
+    line-height: 1.6;
+    font-feature-settings: "tnum" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Tipografias utilitárias do DESIGN-SYSTEM */
+.font-ui {
+  font-family: var(--fonte-ui);
+}
+
+.font-doc {
+  font-family: var(--fonte-doc);
+}
+
+.font-id {
+  font-family: var(--fonte-id);
+}
+
+/* 7. Componentes com vernáculo próprio */
+
+/* Carimbo de Situação (O único elemento em caixa alta) */
+.carimbo-proposta {
+  display: inline-flex;
+  align-items: center;
+  border: 1px dashed var(--tinta-fraca);
+  background-color: transparent;
+  color: var(--tinta-media);
+  font-family: var(--fonte-ui);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: var(--raio);
+}
+
+.carimbo-revisao {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--tinta-media);
+  background-color: transparent;
+  color: var(--tinta);
+  font-family: var(--fonte-ui);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: var(--raio);
+}
+
+.carimbo-homologado {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--marca-granada);
+  background-color: transparent;
+  color: var(--marca-granada);
+  font-family: var(--fonte-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: var(--raio);
+}
+
+/* Citação de Evidência Direta (Spectral 16px + filete lateral) */
+.citacao-evidencia {
+  border-left: 2px solid var(--tinta);
+  padding-left: 16px;
+  font-family: var(--fonte-doc);
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--tinta);
+}
+
+.citacao-evidencia-derivada {
+  border-left: 2px solid var(--tinta-media);
+  padding-left: 16px;
+  font-family: var(--fonte-doc);
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--tinta);
+}
+
+.citacao-evidencia-declaratoria {
+  border-left: 2px dashed var(--tinta-fraca);
+  padding-left: 16px;
+  font-family: var(--fonte-doc);
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--tinta);
+}
+
+/* Superfície de Papel */
+.superficie-papel {
+  background-color: var(--papel);
+  border: 1px solid var(--filete);
+  border-radius: var(--raio);
+}
+
+/* Botões Oficiais */
+.btn-bnb-primario {
+  background-color: var(--marca-granada);
+  color: #FFFFFF;
+  font-family: var(--fonte-ui);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--raio);
+  padding: 8px 16px;
+  transition: background-color 120ms linear;
+}
+.btn-bnb-primario:hover {
+  background-color: var(--marca-granada-escuro);
+}
+
+.btn-bnb-secundario {
+  background-color: var(--papel);
+  color: var(--tinta);
+  border: 1px solid var(--filete-forte);
+  font-family: var(--fonte-ui);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--raio);
+  padding: 8px 16px;
+  transition: background-color 120ms linear;
+}
+.btn-bnb-secundario:hover {
+  background-color: var(--fundo);
+}

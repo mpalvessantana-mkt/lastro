@@ -1,0 +1,93 @@
+{
+  "documento": {
+    "id": "GUIA_DESAFIO",
+    "titulo": "Guia do Desafio — Hackathon STS 2026",
+    "tipo": "REGRA_DO_EVENTO",
+    "orgao": "Banco do Nordeste / SEBRAE",
+    "url": ""
+  },
+  "versaoCorpus": "2026.1",
+  "total": 3,
+  "normas": [
+    {
+      "id": "DESAFIO-5PERGUNTAS",
+      "fonte": "GUIA_DESAFIO",
+      "dispositivo": "Parte 4 — Decisão 1",
+      "ementa": "As cinco perguntas do Manual de Frascati em linguagem operacional",
+      "texto": "Era novo? Buscava um resultado que ainda não existia ou não era conhecido Foi criativo? Partiu de uma ideia ou hipótese própria, e não de um manual Havia incerteza? Ninguém sabia de antemão se ia funcionar, nem quanto custaria Foi organizado? Teve método, planejamento e registro, não foi tentativa e erro solto Dá para reproduzir? O conhecimento gerado pode ser transferido e o resultado repetido",
+      "tags": [
+        "criterios-frascati",
+        "checklist",
+        "operacional"
+      ],
+      "criteriosRelacionados": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "categoriasRelacionadas": [],
+      "vigenciaInicio": "2020-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "Formulação em português das cinco perguntas. A enumeração nomeada dos cinco critérios pertence à edição 2015 do Manual de Frascati; o PDF entregue pelo evento é a edição 2002, cujo critério fundamental está em FRASCATI-P84.",
+      "procedencia": {
+        "documento": "Guia do Desafio — Hackathon STS 2026",
+        "orgao": "Banco do Nordeste / SEBRAE",
+        "arquivoOrigem": "desafio.pdf",
+        "extraidoLiteralmente": true
+      }
+    },
+    {
+      "id": "DESAFIO-NAOROTINA",
+      "fonte": "GUIA_DESAFIO",
+      "dispositivo": "Parte 4 — Decisão 2",
+      "ementa": "Prova negativa de não rotina: exige argumento estruturado e evidência, não opinião",
+      "texto": "Não basta dizer que houve pesquisa. É preciso demonstrar que aquilo não era trabalho comum do dia a dia. Isso é chamado de prova negativa de não rotina, e é difícil porque exige provar uma ausência. É como ter que provar que algo não é fácil. Precisa de argumento estruturado e de evidência, não de opinião.",
+      "tags": [
+        "prova-nao-rotina",
+        "evidencia"
+      ],
+      "criteriosRelacionados": [
+        1,
+        3
+      ],
+      "categoriasRelacionadas": [],
+      "vigenciaInicio": "2020-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "",
+      "procedencia": {
+        "documento": "Guia do Desafio — Hackathon STS 2026",
+        "orgao": "Banco do Nordeste / SEBRAE",
+        "arquivoOrigem": "desafio.pdf",
+        "extraidoLiteralmente": true
+      }
+    },
+    {
+      "id": "DESAFIO-RASTRO",
+      "fonte": "GUIA_DESAFIO",
+      "dispositivo": "Parte 4 — Decisão 3",
+      "ementa": "Rastro mínimo de uma decisão: qual regra, qual informação a sustenta, quem decidiu e quando",
+      "texto": "A fiscalização pode acontecer bem depois, e quem for responder talvez nem tenha participado da análise original. Por isso, cada decisão precisa deixar rastro. Um bom registro responde a três perguntas: • Qual regra foi usada para decidir isso? • Qual informação do projeto sustenta essa decisão? • Quem decidiu, e quando? No material do banco esse registro aparece com o nome de dossiê. É só um jeito formal de dizer: a pasta com tudo o que explica a decisão.",
+      "tags": [
+        "rastreabilidade",
+        "dossie",
+        "auditoria"
+      ],
+      "criteriosRelacionados": [],
+      "categoriasRelacionadas": [],
+      "vigenciaInicio": "2020-01-01",
+      "vigenciaFim": null,
+      "versaoCorpus": "2026.1",
+      "nota": "",
+      "procedencia": {
+        "documento": "Guia do Desafio — Hackathon STS 2026",
+        "orgao": "Banco do Nordeste / SEBRAE",
+        "arquivoOrigem": "desafio.pdf",
+        "extraidoLiteralmente": true
+      }
+    }
+  ]
+}
