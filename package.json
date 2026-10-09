@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "validar": "tsx scripts/validar-motor.ts",
+    "validar:novos": "tsx scripts/testar-casos-novos.ts",
     "seed:normas": "tsx scripts/seed-normas.ts"
   },
   "dependencies": {

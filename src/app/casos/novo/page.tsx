@@ -4,8 +4,11 @@ import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { UploadCloud, Folder, FileCheck, CheckCircle2, Clock, AlertCircle, ArrowRight, Play } from "lucide-react";
 import JSZip from "jszip";
-import { analisarPacote, PacoteArquivos } from "@/motor";
+import { analisarPacote, comporClasse, PacoteArquivos } from "@/motor";
 import { extrairDadosDossie } from "@/motor/parsers/dossie";
+import { extrairTextoCompletoPDF } from "@/lib/pdf-parser";
+import { EstadoCriterio } from "@/types";
+import { AvaliacaoProjetoOutput } from "@/lib/gemini";
 import { adicionarCasoComParecer, salvarArquivosCaso, registrarAuditoria } from "@/lib/casos-store";
 import { HISTORICOS_REFERENCIA } from "@/lib/referencia-data";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,25 +54,118 @@ export default function NovoCasoPage() {
     setCasoIdEmAnalise(idProjeto);
     setTituloEmAnalise(tituloProjeto);
 
-    // Simular as etapas visuais de alta densidade
+    // Iniciar avaliação inteligente com Gemini Flash em paralelo com o stepper visual
+    const promessaIA = (async () => {
+      try {
+        let textoTotal = "";
+        for (const [nome, conteudo] of Object.entries(arquivos)) {
+          if (nome.toLowerCase().endsWith(".pdf")) {
+            const decodificado = extrairTextoCompletoPDF(conteudo);
+            if (decodificado) textoTotal += `\n--- [${nome}] ---\n` + decodificado.slice(0, 10000);
+          } else if (nome.endsWith(".md") || nome.endsWith(".txt") || nome.endsWith(".json")) {
+            textoTotal += `\n--- [${nome}] ---\n` + conteudo.slice(0, 10000);
+          }
+        }
+
+        if (textoTotal.trim().length > 50) {
+          const res = await fetch("/api/ia/avaliar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              casoId: idProjeto,
+              titulo: tituloProjeto,
+              textoCompleto: textoTotal
+            })
+          });
+
+          if (res.ok) {
+            const dados = await res.json();
+            return dados.avaliacao as AvaliacaoProjetoOutput | null;
+          }
+        }
+        return null;
+      } catch (err) {
+        console.warn("Avaliação de IA não retornou a tempo, usando motor determinístico:", err);
+        return null;
+      }
+    })();
+
+    // Avançar as etapas visuais servindo como loader natural para o Gemini Flash (~3s no total)
     setEtapaAtual(0);
     setArquivosLidos(Object.keys(arquivos));
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 500));
 
     setEtapaAtual(1);
-    await new Promise((r) => setTimeout(r, 700));
-
-    setEtapaAtual(2);
-    await new Promise((r) => setTimeout(r, 800));
-
-    setEtapaAtual(3);
-    await new Promise((r) => setTimeout(r, 700));
-
-    setEtapaAtual(4);
     await new Promise((r) => setTimeout(r, 600));
 
-    // Executar motor determinístico puro (ele também extrai metadados do dossiê internamente)
+    setEtapaAtual(2);
+    await new Promise((r) => setTimeout(r, 600));
+
+    setEtapaAtual(3);
+    await new Promise((r) => setTimeout(r, 600));
+
+    setEtapaAtual(4);
+
+    // Aguardar conclusão da IA (Gemini Flash) ou timeout de segurança de 15s
+    const avaliacaoIA = await Promise.race([
+      promessaIA,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 15000))
+    ]);
+
+    // Executar motor determinístico recalibrado com prudência fiscal
     const resultado = analisarPacote(idProjeto, tituloProjeto, arquivos);
+
+    // Se a IA tiver concluído a análise dos 5 critérios, aplicar os pareceres refinados
+    if (avaliacaoIA && avaliacaoIA.criterios) {
+      const c = avaliacaoIA.criterios;
+      const novosEstados: Record<number, EstadoCriterio> = {
+        1: c.c1_novidade.estado,
+        2: c.c2_criatividade.estado,
+        3: c.c3_incerteza.estado,
+        4: c.c4_sistematicidade.estado,
+        5: c.c5_transferibilidade.estado
+      };
+
+      const novaComp = comporClasse(novosEstados);
+      if (novaComp.classe !== "CONFLITO" && novaComp.classe !== "INCOMPLETO") {
+        resultado.parecer.classeProposta = novaComp.classe;
+      }
+
+      const lista = [
+        { id: 1, dado: c.c1_novidade },
+        { id: 2, dado: c.c2_criatividade },
+        { id: 3, dado: c.c3_incerteza },
+        { id: 4, dado: c.c4_sistematicidade },
+        { id: 5, dado: c.c5_transferibilidade }
+      ];
+
+      for (const item of lista) {
+        if (resultado.parecer.pontos[item.id]) {
+          resultado.parecer.pontos[item.id].estadoProposto = item.dado.estado;
+          resultado.parecer.pontos[item.id].porqueProposto = item.dado.justificativa;
+          resultado.parecer.pontos[item.id].confianca = "ALTA";
+          if (item.dado.trechoCitado && resultado.parecer.pontos[item.id].citacoesPropostas.length > 0) {
+            resultado.parecer.pontos[item.id].citacoesPropostas[0].trecho = item.dado.trechoCitado;
+            resultado.parecer.pontos[item.id].citacoesPropostas[0].origem = "IA";
+          }
+        }
+      }
+
+      if (avaliacaoIA.lacunasDeEvidencia && avaliacaoIA.lacunasDeEvidencia.length > 0) {
+        resultado.parecer.lacunas = [
+          ...resultado.parecer.lacunas,
+          ...avaliacaoIA.lacunasDeEvidencia
+        ];
+      }
+
+      if (avaliacaoIA.atividadesDeRotinaIdentificadas && avaliacaoIA.atividadesDeRotinaIdentificadas.length > 0) {
+        resultado.parecer.lacunas.push(
+          `Vedações de Rotina (§ 141 Frascati): ${avaliacaoIA.atividadesDeRotinaIdentificadas.join("; ")}`
+        );
+      }
+
+      resultado.parecer.geradoPor = "LASTRO AI (Gemini Flash + Motor Recalibrado)";
+    }
 
     // Salvar no repositório de casos
     adicionarCasoComParecer(resultado.caso, resultado.parecer);
@@ -88,7 +184,7 @@ export default function NovoCasoPage() {
 
     registrarAuditoria({
       casoId: idProjeto,
-      ator: "LASTRO Motor v1.0",
+      ator: resultado.parecer.geradoPor,
       papel: "analista",
       acao: "PARECER_PROPOSTO",
       alvo: resultado.parecer.id,
@@ -98,7 +194,7 @@ export default function NovoCasoPage() {
     });
 
     setEtapaAtual(5); // Concluído
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 400));
     router.push(`/casos/${idProjeto}/parecer`);
   };
 
