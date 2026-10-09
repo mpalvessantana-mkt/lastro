@@ -41,7 +41,10 @@ export async function GET(request: NextRequest) {
     arquivo = "evidencias/metodo.md";
   }
 
-  // Sanitizar caminho para evitar directory traversal
+  // Sanitizar caminho para evitar directory traversal: casoId só PRJnn; arquivo sem ".."
+  if (!/^PRJ\d{2}$/.test(casoId)) {
+    return NextResponse.json({ error: "casoId inválido" }, { status: 400 });
+  }
   const safeArquivo = arquivo.replace(/\\/g, "/").replace(/\.\./g, "");
   const filePath = path.resolve(process.cwd(), `Arquivos/${casoId}/${safeArquivo}`);
 

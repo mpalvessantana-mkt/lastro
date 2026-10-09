@@ -29,96 +29,150 @@ export interface LinhaResultado {
   natureza: string;
 }
 
+const OPERACOES = [
+  "contagem", "media", "mediana", "diferenca_maior_menor", "percentil_95", "valor_observado", "indicador_precalculado"
+] as const;
+type Operacao = (typeof OPERACOES)[number];
+
 /**
- * Recalcula e confere a integridade matemática de resultados.csv contra medicoes.csv
+ * Meia unidade da última casa declarada: "6.4" → 0.05; "66.666667" → 5e-7; "8" → 0.5.
+ * O valor declarado é uma transcrição arredondada; fora disso, o recálculo diverge.
  */
-export function conferirAritmetica(
-  resultados: LinhaResultado[],
-  medicoes: LinhaMedicao[]
-): Ensaio[] {
-  // Agrupar medicoes por ensaio_id
-  const medicoesPorEnsaio: Record<string, LinhaMedicao[]> = {};
-  for (const m of medicoes) {
-    if (!medicoesPorEnsaio[m.ensaio_id]) {
-      medicoesPorEnsaio[m.ensaio_id] = [];
-    }
-    medicoesPorEnsaio[m.ensaio_id].push(m);
-  }
+function tolerancia(declarado: string | undefined): number {
+  const casas = (declarado ?? "").trim().split(".")[1]?.length ?? 0;
+  return 0.5 * 10 ** -casas + 1e-9;
+}
 
-  const ensaios: Ensaio[] = [];
+function confere(declarado: string | undefined, valor: number | null, calculado: number): boolean {
+  return valor !== null && Math.abs(valor - calculado) <= tolerancia(declarado);
+}
 
-  for (const res of resultados) {
-    const ensaioId = res.ensaio_id;
-    const meds = medicoesPorEnsaio[ensaioId] || [];
+function fmt(n: number): string {
+  return Number.isInteger(n) ? String(n) : String(Number(n.toFixed(6)));
+}
 
-    const valorOriginal = parseDecimal(res.valor) ?? 0;
-    const baseOriginal = parseDecimal(res.base_de_calculo) ?? 0;
-    const taxaOriginal = parseDecimal(res.taxa_percentual);
+function mediana(ordenados: number[]): number {
+  const meio = Math.floor(ordenados.length / 2);
+  return ordenados.length % 2 ? ordenados[meio] : (ordenados[meio - 1] + ordenados[meio]) / 2;
+}
 
-    let recalculoValor: number | null = null;
-    let recalculoTaxa: number | null = null;
-    let conferido = true;
-    let divergencia: string | null = null;
+interface Recalculo {
+  valor: number | null;
+  /** Base de cálculo esperada pela definição da operação (§6.6). */
+  base: number | null;
+  /** Taxa esperada (só contagem de desempenho). */
+  taxa: number | null;
+  problema: string | null;
+}
 
-    if (res.operacao === "contagem") {
-      // Somar numeradores e denominadores
-      let somaNum = 0;
-      let somaDen = 0;
+/** Recalcula um resultado a partir das medições do mesmo ensaio, pela definição de operacoes_resultados. */
+function recalcular(op: Operacao, meds: LinhaMedicao[], natureza: string): Recalculo {
+  const valores = () => meds.map((m) => parseDecimal(m.valor)).filter((v): v is number => v !== null);
+
+  switch (op) {
+    case "contagem": {
+      let num = 0;
+      let den = 0;
       for (const m of meds) {
-        somaNum += parseDecimal(m.numerador) ?? (parseDecimal(m.valor) ?? 0);
-        somaDen += parseDecimal(m.denominador) ?? 0;
+        const n = parseDecimal(m.numerador) ?? parseDecimal(m.valor);
+        const d = parseDecimal(m.denominador);
+        if (n === null) return { valor: null, base: null, taxa: null, problema: `medição ${m.registro_id} sem numerador` };
+        num += n;
+        den += d ?? 0;
       }
+      const taxa = natureza !== "entrega" && den > 0 ? (num / den) * 100 : null;
+      return { valor: num, base: den > 0 ? den : null, taxa, problema: null };
+    }
+    case "media":
+    case "mediana":
+    case "diferenca_maior_menor": {
+      const v = valores();
+      if (v.length !== meds.length) return { valor: null, base: null, taxa: null, problema: "medição sem valor" };
+      const ordenados = [...v].sort((a, b) => a - b);
+      const valor =
+        op === "media" ? v.reduce((a, b) => a + b, 0) / v.length
+        : op === "mediana" ? mediana(ordenados)
+        : ordenados[ordenados.length - 1] - ordenados[0];
+      return { valor, base: v.length, taxa: null, problema: null };
+    }
+    case "percentil_95": {
+      const pares = meds.map((m) => ({ valor: parseDecimal(m.valor), peso: parseDecimal(m.peso) }));
+      if (pares.some((p) => p.valor === null || p.peso === null)) {
+        return { valor: null, base: null, taxa: null, problema: "linha do histograma sem valor ou peso" };
+      }
+      const ordenados = (pares as Array<{ valor: number; peso: number }>).sort((a, b) => a.valor - b.valor);
+      const total = ordenados.reduce((a, p) => a + p.peso, 0);
+      const posto = Math.ceil(0.95 * total);
+      let acumulado = 0;
+      const alvo = ordenados.find((p) => (acumulado += p.peso) >= posto);
+      return { valor: alvo?.valor ?? null, base: total, taxa: null, problema: null };
+    }
+    case "valor_observado":
+    case "indicador_precalculado": {
+      if (meds.length !== 1) {
+        return { valor: null, base: 1, taxa: null, problema: `esperada uma única medição, há ${meds.length}` };
+      }
+      return { valor: parseDecimal(meds[0].valor), base: 1, taxa: null, problema: null };
+    }
+  }
+}
 
-      recalculoValor = somaNum;
-      if (somaDen > 0) {
-        recalculoTaxa = (somaNum / somaDen) * 100;
-      }
+/**
+ * Recalcula e confere resultados.csv contra medicoes.csv, só com as linhas do mesmo
+ * ensaio_id (§6.6). Vazio nunca vira zero; ensaio sem medição não é dado como conferido.
+ */
+export function conferirAritmetica(resultados: LinhaResultado[], medicoes: LinhaMedicao[]): Ensaio[] {
+  const medicoesPorEnsaio: Record<string, LinhaMedicao[]> = {};
+  for (const m of medicoes) (medicoesPorEnsaio[m.ensaio_id] ??= []).push(m);
 
-      // Validar tolerância de 0.01%
-      const valorConfere = Math.abs(valorOriginal - somaNum) < 0.001;
-      const baseConfere = somaDen === 0 || Math.abs(baseOriginal - somaDen) < 0.001;
-      let taxaConfere = true;
-      if (taxaOriginal !== null && recalculoTaxa !== null) {
-        taxaConfere = Math.abs(taxaOriginal - recalculoTaxa) < 0.05;
-      }
+  return resultados.map((res) => {
+    const meds = medicoesPorEnsaio[res.ensaio_id] ?? [];
+    const valor = parseDecimal(res.valor);
+    const base = parseDecimal(res.base_de_calculo);
+    const taxa = parseDecimal(res.taxa_percentual);
+    const op = (OPERACOES as readonly string[]).includes(res.operacao) ? (res.operacao as Operacao) : null;
 
-      if (!valorConfere || !baseConfere || !taxaConfere) {
-        conferido = false;
-        divergencia = `Contagem divergente: Calculado (${somaNum}/${somaDen}) vs Declarado (${valorOriginal}/${baseOriginal})`;
-      }
-    } else if (res.operacao === "media") {
-      const valores = meds.map((m) => parseDecimal(m.valor)).filter((v): v is number => v !== null);
-      if (valores.length > 0) {
-        const media = valores.reduce((acc, v) => acc + v, 0) / valores.length;
-        recalculoValor = media;
-        if (Math.abs(valorOriginal - media) > 0.01) {
-          conferido = false;
-          divergencia = `Média divergente: Calculada ${media.toFixed(2)} vs Declarada ${valorOriginal}`;
-        }
-      }
+    const divergencias: string[] = [];
+    let recalculo: number | null = null;
+
+    if (valor === null) divergencias.push("valor declarado vazio (vazio não é zero)");
+    if (!op) {
+      divergencias.push(`operação desconhecida: "${res.operacao}"`);
+    } else if (meds.length === 0) {
+      divergencias.push("nenhuma medição do ensaio em medicoes.csv; recálculo impossível");
     } else {
-      // Para outras operações (valor_observado, percentil_95, indicador_precalculado)
-      // Marca como conferido se encontrar os registros correspondentes
-      recalculoValor = valorOriginal;
+      const r = recalcular(op, meds, res.natureza);
+      recalculo = r.valor;
+      if (r.problema) divergencias.push(r.problema);
+      if (r.valor !== null && valor !== null && !confere(res.valor, valor, r.valor)) {
+        divergencias.push(`valor recalculado ${fmt(r.valor)} ≠ declarado ${res.valor}`);
+      }
+      if (r.base !== null && !confere(res.base_de_calculo, base, r.base)) {
+        divergencias.push(`base recalculada ${fmt(r.base)} ≠ declarada ${res.base_de_calculo || "vazia"}`);
+      }
+      if (r.taxa !== null && taxa !== null && !confere(res.taxa_percentual, taxa, r.taxa)) {
+        divergencias.push(`taxa recalculada ${fmt(r.taxa)}% ≠ declarada ${res.taxa_percentual}%`);
+      }
+      if (taxa !== null && r.taxa === null && !r.problema) {
+        divergencias.push("taxa declarada onde a operação não admite taxa (só contagem de desempenho)");
+      }
     }
 
-    ensaios.push({
-      id: ensaioId,
+    return {
+      id: res.ensaio_id,
       versao: res.versao,
       metrica: res.metrica,
-      operacao: res.operacao as any,
-      valor: valorOriginal,
-      baseDeCalculo: baseOriginal,
+      operacao: (op ?? res.operacao) as Ensaio["operacao"],
+      valor,
+      baseDeCalculo: base,
       descricaoBase: res.descricao_base,
-      taxaPercentual: taxaOriginal,
+      taxaPercentual: taxa,
       unidade: res.unidade,
       natureza: res.natureza === "entrega" ? "entrega" : "desempenho",
       fonte: res.fonte,
-      conferido,
-      recalculo: recalculoValor,
-      divergenciaRecalculo: divergencia
-    });
-  }
-
-  return ensaios;
+      conferido: divergencias.length === 0,
+      recalculo,
+      divergenciaRecalculo: divergencias.length ? divergencias.join("; ") : null
+    };
+  });
 }

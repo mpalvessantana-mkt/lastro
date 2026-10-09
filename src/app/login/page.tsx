@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import { MarcaLastro, LogoBNB } from "@/components/Marca";
+import { AlternarTema } from "@/components/AlternarTema";
 import { useRouter } from "next/navigation";
 import { Palavras } from "@/components/PalavrasAnimadas";
 import { useAuth } from "@/contexts/AuthContext";
 import { Papel } from "@/types";
+import { iniciarSessao, destinoAposLogin } from "@/lib/sessao";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,31 +35,24 @@ export default function LoginPage() {
     trocarPapel(papel);
     if (typeof window !== "undefined") {
       localStorage.setItem("lastro_papel_ativo", papel);
-      sessionStorage.setItem("lastro:sessao", "1");
     }
+    iniciarSessao();
 
-    // Redireciona para a esteira de casos
-    router.replace("/casos");
+    // Volta para a rota que a pessoa tentou abrir; sem ela, a esteira de casos
+    const volta = new URLSearchParams(window.location.search).get("volta");
+    router.replace(destinoAposLogin(volta));
   }
 
   const campo =
-    "w-full rounded-lg border-[1.5px] border-[#EADFDC] bg-white px-3 py-2.5 text-sm text-[#2A1418] focus:outline-none focus:border-[#A71633] transition-colors";
+    "w-full rounded-lg border-[1.5px] border-[var(--c-eadfdc)] bg-[var(--c-ffffff)] px-3 py-2.5 text-sm text-[var(--c-2a1418)] focus:outline-none focus:border-[var(--c-a71633)] transition-colors";
 
   return (
     <div className="grid min-h-screen md:grid-cols-2">
       {/* Coluna Esquerda: Marca e Apresentação */}
-      <section className="relative flex min-h-[320px] flex-col justify-between overflow-hidden bg-[#A71633] p-8 text-white md:p-14">
-        <div className="z-10 flex items-center gap-3">
-          <div className="relative h-10 w-40">
-            <Image
-              src="/logo-bnb.png"
-              alt="Banco do Nordeste"
-              width={160}
-              height={56}
-              className="h-10 w-auto object-contain"
-              priority
-            />
-          </div>
+      <section className="relative flex min-h-[320px] flex-col justify-between overflow-hidden bg-[var(--marca-painel)] p-8 text-white md:p-14">
+        <div className="z-10 flex items-center justify-between gap-4">
+          <MarcaLastro tamanho="lg" />
+          <LogoBNB altura={36} />
         </div>
 
         <div className="relative z-10 my-auto py-8">
@@ -75,20 +70,21 @@ export default function LoginPage() {
 
         {/* Detalhe geométrico institucional */}
         <div 
-          className="absolute -bottom-20 -right-20 h-72 w-72 rounded-[80px] border-[46px] border-[#F28C00] pointer-events-none" 
+          className="absolute -bottom-20 -right-20 h-72 w-72 rounded-[80px] border-[46px] border-[var(--c-f28c00)] pointer-events-none" 
           aria-hidden="true" 
         />
       </section>
 
       {/* Coluna Direita: Formulário */}
-      <section className="flex items-center justify-center bg-white p-8">
+      <section className="relative flex items-center justify-center bg-[var(--c-ffffff)] p-8">
+        <AlternarTema sobre="superficie" className="absolute right-6 top-6" />
         <form onSubmit={entrar} className="grid w-full max-w-sm gap-4" noValidate>
           <div>
-            <h2 className="text-2xl font-bold text-[#2A1418]">Entrar</h2>
-            <p className="text-sm text-[#74605F]">Acesso restrito a analistas credenciados.</p>
+            <h2 className="text-2xl font-bold text-[var(--c-2a1418)]">Entrar</h2>
+            <p className="text-sm text-[var(--c-74605f)]">Acesso restrito a analistas credenciados.</p>
           </div>
 
-          <label className="grid gap-1.5 text-sm font-semibold text-[#2A1418]">
+          <label className="grid gap-1.5 text-sm font-semibold text-[var(--c-2a1418)]">
             Perfil
             <select
               className={campo}
@@ -101,7 +97,7 @@ export default function LoginPage() {
             </select>
           </label>
 
-          <label className="grid gap-1.5 text-sm font-semibold text-[#2A1418]">
+          <label className="grid gap-1.5 text-sm font-semibold text-[var(--c-2a1418)]">
             Matrícula ou e-mail corporativo
             <input
               className={campo}
@@ -112,7 +108,7 @@ export default function LoginPage() {
             />
           </label>
 
-          <label className="grid gap-1.5 text-sm font-semibold text-[#2A1418]">
+          <label className="grid gap-1.5 text-sm font-semibold text-[var(--c-2a1418)]">
             Senha
             <input
               className={campo}
@@ -124,7 +120,7 @@ export default function LoginPage() {
             />
           </label>
 
-          <label className="grid gap-1.5 text-sm font-semibold text-[#2A1418]">
+          <label className="grid gap-1.5 text-sm font-semibold text-[var(--c-2a1418)]">
             Código de verificação (6 dígitos)
             <input
               className={campo}
@@ -136,10 +132,10 @@ export default function LoginPage() {
             />
           </label>
 
-          <label className="flex items-start gap-2.5 text-sm text-[#74605F] cursor-pointer">
+          <label className="flex items-start gap-2.5 text-sm text-[var(--c-74605f)] cursor-pointer">
             <input
               type="checkbox"
-              className="mt-1 h-[18px] w-[18px] accent-[#A71633] cursor-pointer"
+              className="mt-1 h-[18px] w-[18px] accent-[var(--c-a71633)] cursor-pointer"
               checked={aceite}
               onChange={(e) => setAceite(e.target.checked)}
             />
@@ -147,7 +143,7 @@ export default function LoginPage() {
           </label>
 
           {erro ? (
-            <p className="min-h-5 text-sm font-medium text-[#A71633]" role="alert">
+            <p className="min-h-5 text-sm font-medium text-[var(--c-a71633)]" role="alert">
               {erro}
             </p>
           ) : (
@@ -156,12 +152,12 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="rounded-lg bg-[#A71633] py-3 font-bold text-white transition-colors hover:bg-[#85112a] active:bg-[#6e0e22] cursor-pointer"
+            className="rounded-lg bg-[var(--c-a71633)] py-3 font-bold text-white transition-colors hover:bg-[var(--c-85112a)] active:bg-[var(--c-6e0e22)] cursor-pointer"
           >
             Entrar
           </button>
 
-          <small className="text-center text-xs text-[#74605F]">
+          <small className="text-center text-xs text-[var(--c-74605f)]">
             Protótipo: qualquer matrícula, senha e código (ex: 123456) funcionam.
           </small>
         </form>

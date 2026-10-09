@@ -6,7 +6,7 @@ const csvPath = path.resolve(process.cwd(), "Arquivos/historicos_classificados.c
 const outPath = path.resolve(process.cwd(), "src/lib/referencia-data.ts");
 
 const content = fs.readFileSync(csvPath, "utf-8");
-const parsed = Papa.parse<any>(content, {
+const parsed = Papa.parse<Record<string, string>>(content, {
   header: true,
   delimiter: ";",
   skipEmptyLines: true

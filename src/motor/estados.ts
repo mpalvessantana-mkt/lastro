@@ -1,461 +1,424 @@
 import { EstadoCriterio } from "../types";
 
+/**
+ * Sugestão de estado por critério a partir de marcadores linguísticos (CLAUDE.md §8.1).
+ *
+ * Regra de neutralidade: sem marcador reconhecido, o estado NÃO é proposto
+ * (estadoSugerido = null, confiança BAIXA). Isso vira lacuna explícita e a classe
+ * fica INCOMPLETO (§5.3, item 8). Nunca há fallback para um estado positivo.
+ */
 export interface SugestaoEstado {
   criterioId: number;
-  estadoSugerido: EstadoCriterio;
+  estadoSugerido: EstadoCriterio | null;
   confianca: "ALTA" | "MEDIA" | "BAIXA";
   marcadoresEncontrados: string[];
   justificativaSugerida: string;
+  /** Estado sem marcador próprio, derivado de outro critério ou das versões medidas (citação herdada). */
+  derivadoDe?: 1 | 3 | "medicoes";
 }
 
-export function sugerirEstadoCriterio5(textoLimite: string): SugestaoEstado {
-  const norm = (textoLimite || "").toLowerCase().trim();
+type Marcador = string | RegExp;
 
-  // Caso vazio ou sem evidência documentada
-  if (!norm || norm.length < 15) {
-    return {
-      criterioId: 5,
-      estadoSugerido: "INSUFICIENTE PARA O NÚCLEO ALEGADO",
-      confianca: "BAIXA",
-      marcadoresEncontrados: ["ausência de texto de limites"],
-      justificativaSugerida: "Não foram localizadas evidências textuais delimitando a conclusão ou demonstrando reprodutibilidade do núcleo de P&D."
-    };
-  }
+/** Minúsculas, sem acentos e com espaços colapsados — marcadores são escritos nesta forma. */
+export function normalizarTexto(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/\s+/g, " ");
+}
 
-  // Marcadores de configuração e rotina de TI (§ 141 Frascati / Não elegível)
-  const marcadoresConfig = [
-    "não há hipótese de mecanismo novo",
-    "nao ha hipotese de mecanismo novo",
-    "apenas adequação",
-    "apenas adequacao",
-    "aplicação conhecida",
-    "aplicacao conhecida",
-    "não transforma rotina em p&d",
-    "não transforma rotina em",
-    "nao transforma rotina em",
-    "aceite limitado aos conectores",
-    "aceite limitado",
-    "customização de software",
-    "customizacao de software",
-    "parametrização de sistema",
-    "parametrizacao de sistema",
-    "integração de api padrão",
-    "uso de ferramentas existentes"
-  ];
-  for (const m of marcadoresConfig) {
-    if (norm.includes(m)) {
-      return {
-        criterioId: 5,
-        estadoSugerido: "DOCUMENTADA PARA A CONFIGURAÇÃO",
-        confianca: "ALTA",
-        marcadoresEncontrados: [m],
-        justificativaSugerida: "Receita, parâmetros, versões e resultados estão localizados; a existência de documentação não transforma rotina ou configuração em P&D (Manual de Frascati § 141)."
-      };
+function encontrar(textoNorm: string, marcadores: Marcador[]): string[] {
+  const achados: string[] = [];
+  for (const m of marcadores) {
+    if (typeof m === "string") {
+      if (textoNorm.includes(m)) achados.push(m);
+    } else {
+      const r = textoNorm.match(m);
+      if (r) achados.push(r[0]);
     }
   }
+  return achados;
+}
 
-  // Marcadores de insuficiência (Evidência insuficiente)
-  const marcadoresInsuf = [
-    "faltam",
-    "não preservou",
-    "nao preservou",
-    "não permite distinguir",
-    "nao permite distinguir",
-    "não completam a cadeia",
-    "não completam",
-    "nao completam",
-    "sem regras e saídas",
-    "sem regras e saidas",
-    "ausência de logs",
-    "ausencia de logs",
-    "dados parciais"
-  ];
-  for (const m of marcadoresInsuf) {
-    if (norm.includes(m)) {
-      return {
-        criterioId: 5,
-        estadoSugerido: "INSUFICIENTE PARA O NÚCLEO ALEGADO",
-        confianca: "ALTA",
-        marcadoresEncontrados: [m],
-        justificativaSugerida: "A documentação existente não completa a cadeia probatória do núcleo alegado."
-      };
+/** Termos que só contam quando aparecem numa frase negada ("não há técnica nova"). */
+function encontrarEmFraseNegada(textoNorm: string, termos: string[]): string[] {
+  const achados: string[] = [];
+  for (const frase of textoNorm.split(/[.;]\s/)) {
+    if (!/\b(nao|nenhum|nenhuma|sem|nem)\b/.test(frase)) continue;
+    for (const t of termos) {
+      if (frase.includes(t)) achados.push(t);
     }
   }
+  return achados;
+}
 
-  // Marcadores de limite (Com ressalvas)
-  const marcadoresLimite = [
-    "mas não a alegação de",
-    "mas nao a alegacao de",
-    "permanece em aberto",
-    "ainda não foi validada",
-    "ainda nao foi validada",
-    "segue aberto",
-    "corte de energia",
-    "não foi ensaiado",
-    "nao foi ensaiado",
-    "não integra a pretensão",
-    "nao integra a pretensao",
-    "ainda não foi",
-    "ainda nao foi",
-    "limitação observada",
-    "limitacao observada"
-  ];
-  for (const m of marcadoresLimite) {
-    if (norm.includes(m)) {
-      return {
-        criterioId: 5,
-        estadoSugerido: "DOCUMENTADA COM LIMITE",
-        confianca: "ALTA",
-        marcadoresEncontrados: [m],
-        justificativaSugerida: "A evidência sustenta a investigação no recorte ensaiado, mas há pretensão técnica que permanece em aberto."
-      };
-    }
-  }
-
-  // Marcadores de escopo (Elegível)
-  const marcadoresEscopo = [
-    "conclusão limitada a",
-    "conclusao limitada a",
-    "conclusão restrita",
-    "conclusao restrita",
-    "restrita às",
-    "restrita as",
-    "restrita aos",
-    "não se reivindica",
-    "nao se reivindica",
-    "não se promete",
-    "nao se promete",
-    "não foram reivindicadas",
-    "nao foram reivindicadas",
-    "compõem o escopo de conclusão",
-    "compoem o escopo de conclusao",
-    "o experimento cobre",
-    "validado no escopo experimental",
-    "escopo delimitado",
-    "acompanham o pacote",
-    "restrito ao recorte",
-    "restrito aos",
-    "restrito às"
-  ];
-  for (const m of marcadoresEscopo) {
-    if (norm.includes(m)) {
-      return {
-        criterioId: 5,
-        estadoSugerido: "DOCUMENTADA NO ESCOPO",
-        confianca: "ALTA",
-        marcadoresEncontrados: [m],
-        justificativaSugerida: "Escopo de conclusão delimitado e sustentado com transferência documentada."
-      };
-    }
-  }
-
-  // Fallback prudente (Manual de Frascati / Prudência Fiscal):
-  // Se o texto não apresenta demonstração clara de escopo ou limite de transferência,
-  // a classificação prudente é INSUFICIENTE PARA O NÚCLEO ALEGADO (não Elegível cego).
+function sugestao(
+  criterioId: number,
+  estado: EstadoCriterio,
+  confianca: "ALTA" | "MEDIA",
+  marcadores: string[],
+  fonte: string,
+  texto: string
+): SugestaoEstado {
+  const lista = marcadores.map((m) => `“${m}”`).join(", ");
   return {
-    criterioId: 5,
-    estadoSugerido: "INSUFICIENTE PARA O NÚCLEO ALEGADO",
-    confianca: "BAIXA",
-    marcadoresEncontrados: [],
-    justificativaSugerida: "A documentação apresentada não traz delimitação explícita do escopo nem comprova a reprodutibilidade do núcleo alegado."
+    criterioId,
+    estadoSugerido: estado,
+    confianca,
+    marcadoresEncontrados: marcadores,
+    justificativaSugerida: `${texto} Marcador(es) em ${fonte}: ${lista}.`
   };
 }
+
+function semEstado(criterioId: number, fonte: string): SugestaoEstado {
+  return {
+    criterioId,
+    estadoSugerido: null,
+    confianca: "BAIXA",
+    marcadoresEncontrados: [],
+    justificativaSugerida: `Nenhum marcador reconhecido em ${fonte}. Estado não proposto: lacuna a ser determinada pelo analista.`
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Critério 5 — Transferência/reprodução (lido do limite da conclusão)
+// ---------------------------------------------------------------------------
+
+const C5_CONFIGURACAO: Marcador[] = [
+  "nao ha hipotese de mecanismo novo",
+  "apenas adequacao",
+  "aplicacao conhecida",
+  /nao transforma [^.]{0,60}(p&d|pesquisa)/,
+  "verificacao funcional",
+  "o escopo e conformidade",
+  /nao se propos [^.]{0,40}(alterar|mecanismo|metodo|tecnica)/,
+  "comportamento contratado",
+  /aplicacao d[oa]s? [^.]{0,40}existente/,
+  "permanece a fornecida"
+];
+const C5_CONFIGURACAO_NEGADOS = [
+  "tecnica nova",
+  "novo metodo",
+  "outro metodo",
+  "mecanismo novo",
+  "avanco tecnologico",
+  "primitiva",
+  "metodo novo",
+  "obstaculo tecnologico"
+];
+const C5_INSUFICIENTE: Marcador[] = [
+  "faltam",
+  "nao preserv",
+  "nao permite distinguir",
+  "nao complet",
+  "nao prova",
+  "nao se avalia",
+  /nao (foi|foram) recuperad/,
+  /nao demonstra[m]? a tecnica/
+];
+const C5_LIMITE: Marcador[] = [
+  "mas nao a alegacao",
+  "permanece em aberto",
+  "segue aberto",
+  /ainda nao foi validad/,
+  /nao foi ensaiad/,
+  /(integra|incluid[ao] n)a pretensao/,
+  "nao satisfaz",
+  /(continua|segue|permanece) sem validacao/,
+  /nao (foi|foram) validad/,
+  "segue em teste",
+  "nao constitui validacao completa",
+  "nao se sustenta",
+  "antes de ampliar a conclusao",
+  /(objetivo|hipotese|pretensao) original [^.]{0,30}inclu/
+];
+const C5_ESCOPO: Marcador[] = [
+  "conclusao limitada",
+  "nao se reivindica",
+  /nao foram reivindicad/,
+  "escopo de conclusao",
+  "o experimento cobre",
+  "o resultado mede",
+  "a transferencia e da",
+  /conclusao (restrita|limitada)/,
+  /escopo (pre-?definido|definido antes)/,
+  /(foram|sao) excluid[ao]s antes/,
+  /nao (se promete|e prometid)|nenhum [^.]{0,30} e prometid/
+];
+
+export function sugerirEstadoCriterio5(textoLimite: string, c1e2Estado: EstadoCriterio | null = null): SugestaoEstado {
+  const fonte = "metodo.md#6";
+  const norm = normalizarTexto(textoLimite);
+
+  const config = [...encontrar(norm, C5_CONFIGURACAO), ...encontrarEmFraseNegada(norm, C5_CONFIGURACAO_NEGADOS)];
+  if (config.length) {
+    return sugestao(5, "DOCUMENTADA PARA A CONFIGURAÇÃO", "ALTA", config, fonte,
+      "O limite declara verificação de configuração ou aceite, sem mecanismo novo; a existência de documentação não transforma rotina em P&D.");
+  }
+
+  const insuf = encontrar(norm, C5_INSUFICIENTE);
+  if (insuf.length) {
+    return sugestao(5, "INSUFICIENTE PARA O NÚCLEO ALEGADO", "ALTA", insuf, fonte,
+      "O limite declara elos faltantes: a documentação existente não completa a cadeia probatória do núcleo alegado.");
+  }
+
+  const limite = encontrar(norm, C5_LIMITE);
+  if (limite.length) {
+    return sugestao(5, "DOCUMENTADA COM LIMITE", "ALTA", limite, fonte,
+      "A evidência sustenta a investigação no recorte ensaiado, mas o limite declara pretensão técnica em aberto.");
+  }
+
+  const escopo = encontrar(norm, C5_ESCOPO);
+  if (escopo.length) {
+    return sugestao(5, "DOCUMENTADA NO ESCOPO", "ALTA", escopo, fonte,
+      "O limite delimita o escopo da conclusão e não reivindica além do que foi ensaiado.");
+  }
+
+  // Derivação dos critérios 1 e 2, como em c3 e c4: sem marcador no limite, a referência anterior
+  // decide. Só nos estados negativo e de indeterminação; c1 positivo não deriva c5, porque é o c5
+  // que separa Elegível de Com ressalvas.
+  if (c1e2Estado === "NÃO DEMONSTRADA") {
+    return { ...sugestao(5, "DOCUMENTADA PARA A CONFIGURAÇÃO", "MEDIA", ["critérios 1 e 2 não demonstrados"], fonte,
+      "Sem marcador próprio no limite: a referência anterior já resolvia o problema, então o que se transfere é a configuração."), derivadoDe: 1 };
+  }
+  if (c1e2Estado === "INDETERMINADA") {
+    return { ...sugestao(5, "INSUFICIENTE PARA O NÚCLEO ALEGADO", "MEDIA", ["critérios 1 e 2 indeterminados"], fonte,
+      "Sem marcador próprio no limite: sem mecanismo definido, a documentação não alcança o núcleo alegado."), derivadoDe: 1 };
+  }
+
+  return semEstado(5, fonte);
+}
+
+// ---------------------------------------------------------------------------
+// Critérios 1 e 2 — Novidade e Criatividade (metodo.md#1 e #2)
+// ---------------------------------------------------------------------------
+
+const C12_INDETERMINACAO: Marcador[] = [
+  "plano propoe",
+  "minuta",
+  "diagrama",
+  "nao define",
+  "sem limiares aprovados",
+  "identificadas apenas como",
+  "nao preservou",
+  "rascunho",
+  "o desenho propoe",
+  "documento de arquitetura",
+  "pretende validar",
+  /nao (foi|foram) preservad/
+];
+const C12_ROTINA: Marcador[] = [
+  /\b(manual|catalogo|produto|plataforma|cofre|dicionario|fornecedor|runbook|modulo|ferramenta|motor de destino)\b[^.]{0,60}?\b(fornece|oferece|define|permite|preve|recomenda|descreve|contem|disponibiliza)\b/,
+  "anterior a configuracao",
+  "anterior a equipe",
+  "antecede o projeto",
+  "receita do fornecedor",
+  "sem modificar",
+  "faixa ja admitida",
+  "nenhum algoritmo",
+  "fornecidos pela plataforma",
+  "nao houve alteracao",
+  "dentro das faixas documentadas",
+  /ja estava aprovad[ao] antes/,
+  "recebe o motor pronto",
+  "nao alterar logica",
+  "listadas no manual",
+  "dependencia pronta"
+];
+const C12_INVESTIGACAO: Marcador[] = [
+  /\b(eram|sao|estavam|foram) [^.]{0,15}(conhecid|dominad|disponive|especificad)/,
+  "comparador",
+  "a alternativa",
+  "nao vincula",
+  "perde",
+  "o problema investigado",
+  "o problema era",
+  "a hipotese",
+  "a incerteza",
+  "confront",
+  /\b(foi|foram) comparad/,
+  /\bnao (fixa|fixam|preserva|preservam|distingue|distinguem|separa|separam|explicita|explicitam)\b/
+];
+// "X fazia Y, mas falha em Z" sem outro marcador: sinal fraco de investigação.
+const C12_INVESTIGACAO_FRACA: Marcador[] = [/\bmas\b/];
 
 export function sugerirEstadosCriterios1e2(
   textoSecao1: string,
   textoSecao2: string
 ): { c1: SugestaoEstado; c2: SugestaoEstado } {
-  const norm1 = (textoSecao1 || "").toLowerCase().trim();
-  const norm2 = (textoSecao2 || "").toLowerCase().trim();
-  const textoTotal = `${norm1} ${norm2}`.trim();
+  const fonte = "metodo.md#1 e metodo.md#2";
+  const norm = normalizarTexto(`${textoSecao1}\n${textoSecao2}`);
 
-  // Caso vazio ou sem dados suficientes
-  if (textoTotal.length < 15) {
-    return {
-      c1: {
-        criterioId: 1,
-        estadoSugerido: "INDETERMINADA",
-        confianca: "BAIXA",
-        marcadoresEncontrados: ["texto ausente"],
-        justificativaSugerida: "Novidade não verificável; ausência de especificação técnica e de estado da técnica anterior."
-      },
-      c2: {
-        criterioId: 2,
-        estadoSugerido: "INDETERMINADA",
-        confianca: "BAIXA",
-        marcadoresEncontrados: ["texto ausente"],
-        justificativaSugerida: "Criatividade técnica indeterminada por falta de documentação do mecanismo e hipótese."
-      }
-    };
+  const montar = (estado: EstadoCriterio, confianca: "ALTA" | "MEDIA", marcadores: string[], t1: string, t2: string) => ({
+    c1: sugestao(1, estado, confianca, marcadores, fonte, t1),
+    c2: sugestao(2, estado, confianca, marcadores, fonte, t2)
+  });
+
+  const indet = encontrar(norm, C12_INDETERMINACAO);
+  if (indet.length) {
+    return montar("INDETERMINADA", "ALTA", indet,
+      "A referência anterior e o mecanismo aparecem só como plano, minuta ou diagrama; a novidade não é verificável nas evidências entregues.",
+      "O mecanismo não está definido a ponto de permitir avaliar a criatividade técnica.");
   }
 
-  // 1. Rotina / Vedações Frascati § 141 -> NÃO DEMONSTRADA
-  const marcadoresRotina = [
-    "o manual define",
-    "o catálogo já fornece",
-    "o catalogo ja fornece",
-    "o produto já oferece",
-    "o produto ja oferece",
-    "anterior à configuração",
-    "anterior a configuracao",
-    "aplicar receita do fornecedor",
-    "sem modificar",
-    "faixa já admitida",
-    "faixa ja admitida",
-    "antecede o projeto",
-    "customização de erp",
-    "customizacao de erp",
-    "integração via api",
-    "integracao via api",
-    "consumo de api",
-    "tela de cadastro",
-    "crud",
-    "migração de versão",
-    "migracao de versao",
-    "atualização de biblioteca",
-    "atualizacao de biblioteca",
-    "suporte a usuários",
-    "suporte a usuarios",
-    "correção de bugs",
-    "correcao de bugs",
-    "métodos conhecidos e ferramentas",
-    "sem avanço algorítmico",
-    "sem avanco algoritmico"
-  ];
-
-  for (const m of marcadoresRotina) {
-    if (textoTotal.includes(m)) {
-      return {
-        c1: {
-          criterioId: 1,
-          estadoSugerido: "NÃO DEMONSTRADA",
-          confianca: "ALTA",
-          marcadoresEncontrados: [m],
-          justificativaSugerida: "Recursos já fornecidos por catálogo, manual ou tecnologias comerciais de mercado anteriores à configuração (Frascati § 141)."
-        },
-        c2: {
-          criterioId: 2,
-          estadoSugerido: "NÃO DEMONSTRADA",
-          confianca: "ALTA",
-          marcadoresEncontrados: [m],
-          justificativaSugerida: "Atividade de rotina/configuração sem modificação do mecanismo subjacente nem criação de hipótese não óbvia."
-        }
-      };
-    }
+  const rotina = encontrar(norm, C12_ROTINA);
+  if (rotina.length) {
+    return montar("NÃO DEMONSTRADA", "ALTA", rotina,
+      "A referência anterior já fornecia o recurso aplicado.",
+      "O trabalho descrito é configuração ou aplicação de receita existente, sem modificação do mecanismo.");
   }
 
-  // 2. Indeterminação explícita (sem dados reais ou apenas planejamento futuro)
-  const marcadoresIndet = [
-    "plano propõe",
-    "plano propoe",
-    "minuta",
-    "diagrama",
-    "não define",
-    "nao define",
-    "sem limiares aprovados",
-    "identificadas apenas como",
-    "antiga/nova",
-    "em fase de planejamento",
-    "a definir"
-  ];
-  for (const m of marcadoresIndet) {
-    if (textoTotal.includes(m) && !textoTotal.includes("ensaio") && !textoTotal.includes("medições") && !textoTotal.includes("medicoes") && !textoTotal.includes("sequências")) {
-      return {
-        c1: {
-          criterioId: 1,
-          estadoSugerido: "INDETERMINADA",
-          confianca: "ALTA",
-          marcadoresEncontrados: [m],
-          justificativaSugerida: "Novidade não verificável nas evidências entregues (documentação preliminar ou incompleta)."
-        },
-        c2: {
-          criterioId: 2,
-          estadoSugerido: "INDETERMINADA",
-          confianca: "ALTA",
-          marcadoresEncontrados: [m],
-          justificativaSugerida: "Criatividade técnica indeterminada por falta de parâmetros operacionais aprovados."
-        }
-      };
-    }
+  const investigacao = encontrar(norm, C12_INVESTIGACAO);
+  if (investigacao.length) {
+    return montar("DEMONSTRADA NO RECORTE", "ALTA", investigacao,
+      "A referência anterior nomeia alternativas conhecidas e o ponto em que elas falham no problema investigado.",
+      "O mecanismo proposto é especificado frente às alternativas conhecidas.");
   }
 
-  // 3. Investigação genuína de P&D (Técnica anterior superada + formulação de hipótese/mecanismo)
-  const marcadoresInvestigacao = [
-    "já eram conhecidos",
-    "ja eram conhecidos",
-    "já eram dominadas",
-    "ja eram dominadas",
-    "o comparador",
-    "a alternativa",
-    "não vincula",
-    "nao vincula",
-    "perde",
-    "o problema investigado",
-    "hipótese",
-    "hipotese",
-    "grafo de candidatos",
-    "grafo",
-    "pseudocódigo",
-    "pseudocodigo",
-    "ensaio comparativo",
-    "ensaio",
-    "experimento",
-    "modelo próprio",
-    "modelo proprietário",
-    "algoritmo inédito",
-    "algoritmo",
-    "não reproduziam",
-    "nao reproduziam",
-    "não atendiam",
-    "nao atendiam",
-    "eram utilizados",
-    "eram utilizadas",
-    "interleavings",
-    "dependência causal",
-    "dependencia causal",
-    "permutação",
-    "permutacao",
-    "sem produto cartesiano",
-    "sem congelar",
-    "ordens parciais",
-    "como reproduzir",
-    "como viabilizar",
-    "como resolver",
-    "confronto com",
-    "distribuição causal",
-    "distribuicao causal",
-    "sequências de",
-    "sequencias de",
-    "repetições",
-    "repeticoes"
-  ];
-  for (const m of marcadoresInvestigacao) {
-    if (textoTotal.includes(m)) {
-      return {
-        c1: {
-          criterioId: 1,
-          estadoSugerido: "DEMONSTRADA NO RECORTE",
-          confianca: "ALTA",
-          marcadoresEncontrados: [m],
-          justificativaSugerida: "Novidade técnica investigada frente ao estado da técnica anterior com distinção de alternativas."
-        },
-        c2: {
-          criterioId: 2,
-          estadoSugerido: "DEMONSTRADA NO RECORTE",
-          confianca: "ALTA",
-          marcadoresEncontrados: [m],
-          justificativaSugerida: "Criatividade técnica demonstrada pela hipótese e mecanismo formulado não trivial."
-        }
-      };
-    }
+  const fraca = encontrar(norm, C12_INVESTIGACAO_FRACA);
+  if (fraca.length) {
+    return montar("DEMONSTRADA NO RECORTE", "MEDIA", fraca,
+      "A referência anterior contrapõe o recurso existente a uma limitação, sem marcador explícito de comparador.",
+      "O mecanismo é descrito frente a um recurso existente, sem marcador explícito de comparador.");
   }
 
-  // Fallback Prudência Fiscal: texto genérico sem comprovação de alternativa ou mecanismo
-  return {
-    c1: {
-      criterioId: 1,
-      estadoSugerido: "INDETERMINADA",
-      confianca: "BAIXA",
-      marcadoresEncontrados: [],
-      justificativaSugerida: "Novidade técnica indeterminada; não foi demonstrado comparador formal com o estado da técnica anterior."
-    },
-    c2: {
-      criterioId: 2,
-      estadoSugerido: "INDETERMINADA",
-      confianca: "BAIXA",
-      marcadoresEncontrados: [],
-      justificativaSugerida: "Criatividade técnica não verificável; faltam detalhes da hipótese operacional e do modelo subjacente."
-    }
-  };
+  return { c1: semEstado(1, fonte), c2: semEstado(2, fonte) };
 }
+
+// ---------------------------------------------------------------------------
+// Critério 3 — Incerteza tecnológica (metodo.md#2, com apoio de #1 e #3)
+// ---------------------------------------------------------------------------
+
+const C3_NAO_CARACTERIZADA: Marcador[] = [
+  "resolvidos por configuracao",
+  "sem hipotese",
+  "nao houve alteracao"
+];
+const C3_ALEGADA: Marcador[] = ["faltam versao", "sem regras e saidas"];
+const C3_INVESTIGADA: Marcador[] = [
+  "hipotese",
+  "incerteza",
+  "o problema era",
+  "testar se",
+  "confront",
+  "comparador",
+  "alternativa",
+  "comparar",
+  "compartilhad",
+  /\bmesm[ao]s? (entradas?|sequencia|carga|referencia|matriz|ordem|versoes|conjunto|populacao|distribuicao)\b/
+];
 
 export function sugerirEstadoCriterio3(
   textoSecao2: string,
-  c1e2Estado: string
+  c1e2Estado: EstadoCriterio | null,
+  textoApoio = ""
 ): SugestaoEstado {
-  const norm = (textoSecao2 || "").toLowerCase().trim();
+  const fonte = "metodo.md#2";
+  const norm = normalizarTexto(textoSecao2);
 
-  if (
-    c1e2Estado === "INDETERMINADA" ||
-    norm.includes("faltam versão") ||
-    norm.includes("sem regras e saídas") ||
-    norm.length < 15
-  ) {
-    return {
-      criterioId: 3,
-      estadoSugerido: "ALEGADA, NÃO VERIFICÁVEL",
-      confianca: "ALTA",
-      marcadoresEncontrados: ["falta de elo causal"],
-      justificativaSugerida: "Faltam versões executadas e registros de saída para verificar a incerteza tecnológica alegada."
-    };
+  const nao = encontrar(norm, C3_NAO_CARACTERIZADA);
+  if (nao.length) {
+    return sugestao(3, "NÃO CARACTERIZADA", "ALTA", nao, fonte,
+      "Os desvios são resolvidos por configuração, mapeamento ou receita existente, sem hipótese técnica desconhecida.");
   }
 
-  if (
-    c1e2Estado === "NÃO DEMONSTRADA" ||
-    norm.includes("resolvidos por configuração") ||
-    norm.includes("sem hipótese técnica") ||
-    norm.includes("customização") ||
-    norm.includes("parametrização")
-  ) {
-    return {
-      criterioId: 3,
-      estadoSugerido: "NÃO CARACTERIZADA",
-      confianca: "ALTA",
-      marcadoresEncontrados: ["resolvidos por configuração"],
-      justificativaSugerida: "Desvios resolvidos por configuração, mapeamento ou receita existente, sem hipótese técnica desconhecida."
-    };
+  const alegada = encontrar(norm, C3_ALEGADA);
+  if (alegada.length) {
+    return sugestao(3, "ALEGADA, NÃO VERIFICÁVEL", "ALTA", alegada, fonte,
+      "Faltam versões executadas e registros de saída para verificar a incerteza alegada.");
   }
 
-  return {
-    criterioId: 3,
-    estadoSugerido: "INVESTIGADA",
-    confianca: "ALTA",
-    marcadoresEncontrados: ["hipótese e comparador"],
-    justificativaSugerida: "Incerteza tecnológica investigada com controle comparativo e hipótese operacional rastreável."
-  };
+  // Derivação dos critérios 1 e 2: o mesmo texto que os sustenta sustenta a leitura da incerteza.
+  if (c1e2Estado === "INDETERMINADA") {
+    return { ...sugestao(3, "ALEGADA, NÃO VERIFICÁVEL", "MEDIA", ["critérios 1 e 2 indeterminados"], fonte,
+      "Sem mecanismo definido nem versão executada, a incerteza é apenas alegada."), derivadoDe: 1 };
+  }
+  if (c1e2Estado === "NÃO DEMONSTRADA") {
+    return { ...sugestao(3, "NÃO CARACTERIZADA", "MEDIA", ["critérios 1 e 2 não demonstrados"], fonte,
+      "A referência anterior já resolvia o problema; não há incerteza tecnológica caracterizada."), derivadoDe: 1 };
+  }
+
+  if (c1e2Estado === "DEMONSTRADA NO RECORTE") {
+    const inv = encontrar(normalizarTexto(`${textoSecao2}\n${textoApoio}`), C3_INVESTIGADA);
+    if (inv.length) {
+      return sugestao(3, "INVESTIGADA", "ALTA", inv, `${fonte} (com apoio de #1 e #3)`,
+        "Há hipótese ou comparador explícito frente às alternativas conhecidas.");
+    }
+  }
+
+  return semEstado(3, fonte);
 }
+
+// ---------------------------------------------------------------------------
+// Critério 4 — Sistematicidade (metodo.md#3 + versões em medicoes.csv)
+// ---------------------------------------------------------------------------
+
+const C4_PARCIAL: Marcador[] = [
+  /\b(sem|nenhuma tem) causa controlada/,
+  "memorando",
+  "nao ha decisoes pareadas",
+  "sem vincular",
+  "nao tem vinculo",
+  "sem preservar"
+];
+const C4_ACEITE: Marcador[] = [
+  "roteiros de aceite",
+  "apos correcao",
+  "depois do ajuste",
+  /\bprimeir[ao] (rodada|matriz|passagem)\b/,
+  "o roteiro verifica"
+];
+const C4_DOCUMENTADA: Marcador[] = [
+  /criterios? previos?/,
+  "definidos antes",
+  "antes da comparacao",
+  "antes da rodada",
+  /\bmesm[ao]s? (entradas?|sequencia|carga|referencia|matriz|ordem|versoes|conjunto|populacao|distribuicao)\b/,
+  "contrabalancad",
+  "criterio:",
+  /\bcomparadores\b/,
+  "compartilhad"
+];
 
 export function sugerirEstadoCriterio4(
   textoSecao3: string,
-  c3Estado: string
+  c3Estado: EstadoCriterio | null,
+  versoesMedidas = 0
 ): SugestaoEstado {
-  const norm = (textoSecao3 || "").toLowerCase().trim();
+  const fonte = "metodo.md#3";
+  const norm = normalizarTexto(textoSecao3);
 
-  if (
-    c3Estado === "ALEGADA, NÃO VERIFICÁVEL" ||
-    norm.includes("sem causa controlada") ||
-    norm.includes("memorando") ||
-    norm.length < 15
-  ) {
-    return {
-      criterioId: 4,
-      estadoSugerido: "PARCIAL",
-      confianca: "ALTA",
-      marcadoresEncontrados: ["dados parciais"],
-      justificativaSugerida: "Registros recuperados não contêm saídas do mecanismo nem vínculo causal completo."
-    };
+  const parcial = encontrar(norm, C4_PARCIAL);
+  if (parcial.length) {
+    return sugestao(4, "PARCIAL", "ALTA", parcial, fonte,
+      "Os registros recuperados não contêm causa controlada, saída do mecanismo ou vínculo com o resultado alegado.");
   }
 
-  if (
-    c3Estado === "NÃO CARACTERIZADA" ||
-    norm.includes("roteiros de aceite") ||
-    norm.includes("após correção") ||
-    norm.includes("teste funcional")
-  ) {
-    return {
-      criterioId: 4,
-      estadoSugerido: "DOCUMENTADA COMO ACEITE",
-      confianca: "ALTA",
-      marcadoresEncontrados: ["roteiros de aceite"],
-      justificativaSugerida: "Roteiros de verificação funcional e aceite operacional documentados, caracterizando rotina de homologação e não P&D sistemático."
-    };
+  const aceite = encontrar(norm, C4_ACEITE);
+  if (aceite.length) {
+    return sugestao(4, "DOCUMENTADA COMO ACEITE", "ALTA", aceite, fonte,
+      "O protocolo é verificação funcional: uma rodada falhou e a seguinte passou após ajuste.");
   }
 
-  return {
-    criterioId: 4,
-    estadoSugerido: "DOCUMENTADA",
-    confianca: "ALTA",
-    marcadoresEncontrados: ["cenários estruturados"],
-    justificativaSugerida: "Sistematicidade comprovada com múltiplos cenários, perfis e limites definidos antes da rodada."
-  };
+  if (c3Estado === "ALEGADA, NÃO VERIFICÁVEL") {
+    return { ...sugestao(4, "PARCIAL", "MEDIA", ["critério 3 alegado, não verificável"], fonte,
+      "Sem versão executada do mecanismo, os registros não completam a verificação."), derivadoDe: 3 };
+  }
+  if (c3Estado === "NÃO CARACTERIZADA") {
+    return { ...sugestao(4, "DOCUMENTADA COMO ACEITE", "MEDIA", ["critério 3 não caracterizado"], fonte,
+      "Sem incerteza caracterizada, os roteiros registrados documentam aceite da configuração."), derivadoDe: 3 };
+  }
+
+  const documentada = encontrar(norm, C4_DOCUMENTADA);
+  if (documentada.length) {
+    return sugestao(4, "DOCUMENTADA", "ALTA", documentada, fonte,
+      "População definida, comparadores sobre a mesma entrada e critérios fixados antes da rodada.");
+  }
+  if (c3Estado === "INVESTIGADA" && versoesMedidas >= 2) {
+    return { ...sugestao(4, "DOCUMENTADA", "MEDIA", [`${versoesMedidas} versões medidas em medicoes.csv`], `${fonte} e medicoes.csv`,
+      "As alternativas foram executadas e medidas por versão sobre a mesma população."), derivadoDe: "medicoes" };
+  }
+
+  return semEstado(4, fonte);
 }

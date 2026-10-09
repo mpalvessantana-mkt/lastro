@@ -34,22 +34,13 @@ export function extrairDadosDossie(
   casoId: string,
   arquivos: Record<string, string>
 ): DadosDossie {
-  // 1. Procurar arquivo do dossiê no pacote (ou qualquer PDF/documento principal)
-  let dossiePath = Object.keys(arquivos).find(
+  // 1. Procurar arquivo do dossiê no pacote
+  const dossiePath = Object.keys(arquivos).find(
     (k) =>
       k.toLowerCase().includes("dossie_projeto") ||
       k.toLowerCase().includes("dossie") ||
       k.toLowerCase().endsWith("dossier.pdf")
   );
-
-  // Fallback: se não houver arquivo chamado dossiê, buscar qualquer PDF relevante
-  if (!dossiePath) {
-    dossiePath = Object.keys(arquivos).find(
-      (k) =>
-        k.toLowerCase().endsWith(".pdf") &&
-        !k.toLowerCase().includes("transcricao")
-    ) || Object.keys(arquivos).find((k) => k.toLowerCase().endsWith(".pdf"));
-  }
 
   let textoDossie = "";
 
@@ -92,28 +83,28 @@ export function extrairDadosDossie(
       semanasExtraidas = parseInt(matchSemanas[1], 10);
     }
 
-    // d) Extrair Seções de Resumo Executivo (aceitando ou não dois-pontos)
-    const matchContexto = textoDossie.match(/Contexto(?:\s*:|\s+)([\s\S]*?)(?=(?:Pergunta registrada|Refer[eê]ncia anterior|Trabalho documentado|$))/i);
+    // d) Extrair Seções de Resumo Executivo
+    const matchContexto = textoDossie.match(/Contexto\s+([\s\S]*?)(?=(?:Pergunta registrada|Refer[eê]ncia anterior|Trabalho documentado|$))/i);
     if (matchContexto && matchContexto[1]?.trim()) {
       resumo.contexto = limparTexto(matchContexto[1]);
     }
 
-    const matchObjetivo = textoDossie.match(/(?:Pergunta registrada|Objetivo)(?:\s*:|\s+)([\s\S]*?)(?=(?:Refer[eê]ncia anterior|Trabalho documentado|Limite|$))/i);
+    const matchObjetivo = textoDossie.match(/Pergunta registrada\s+([\s\S]*?)(?=(?:Refer[eê]ncia anterior|Trabalho documentado|Limite|$))/i);
     if (matchObjetivo && matchObjetivo[1]?.trim()) {
       resumo.objetivo = limparTexto(matchObjetivo[1]);
     }
 
-    const matchRefAnterior = textoDossie.match(/Refer[eê]ncia anterior(?:\s*:|\s+)([\s\S]*?)(?=(?:Trabalho documentado|Limite da conclus[aã]o|$))/i);
+    const matchRefAnterior = textoDossie.match(/Refer[eê]ncia anterior\s+([\s\S]*?)(?=(?:Trabalho documentado|Limite da conclus[aã]o|$))/i);
     if (matchRefAnterior && matchRefAnterior[1]?.trim()) {
       resumo.referenciaAnterior = limparTexto(matchRefAnterior[1]);
     }
 
-    const matchTrabalho = textoDossie.match(/Trabalho documentado(?:\s*:|\s+)([\s\S]*?)(?=(?:Limite da conclus[aã]o|Localiza[cç][aã]o da prova|$))/i);
+    const matchTrabalho = textoDossie.match(/Trabalho documentado\s+([\s\S]*?)(?=(?:Limite da conclus[aã]o|Localiza[cç][aã]o da prova|$))/i);
     if (matchTrabalho && matchTrabalho[1]?.trim()) {
       resumo.trabalhoDocumentado = limparTexto(matchTrabalho[1]);
     }
 
-    const matchLimite = textoDossie.match(/Limite da conclus[aã]o(?:\s*:|\s+)([\s\S]*?)(?=(?:Localiza[cç][aã]o da prova|$))/i);
+    const matchLimite = textoDossie.match(/Limite da conclus[aã]o\s+([\s\S]*?)(?=(?:Localiza[cç][aã]o da prova|$))/i);
     if (matchLimite && matchLimite[1]?.trim()) {
       resumo.limiteConclusao = limparTexto(matchLimite[1]);
     }

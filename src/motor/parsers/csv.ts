@@ -25,9 +25,12 @@ export function parseCSV<T = Record<string, string>>(conteudo: string): T[] {
   return resultado.data;
 }
 
+// Os CSVs do pacote usam ponto como separador decimal e não têm separador de milhar (§6.1).
+// Vazio nunca é zero; valor fora do formato vira null em vez de um número errado.
 export function parseDecimal(valorStr: string | null | undefined): number | null {
-  if (!valorStr || valorStr.trim() === "") return null;
-  const normalizado = valorStr.replace(/\./g, "").replace(",", ".");
-  const num = parseFloat(normalizado);
-  return isNaN(num) ? null : num;
+  if (valorStr == null) return null;
+  const texto = valorStr.trim();
+  if (texto === "") return null;
+  if (!/^-?\d+(\.\d+)?$/.test(texto)) return null;
+  return Number(texto);
 }

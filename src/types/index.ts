@@ -2,7 +2,8 @@ export type CriterioId = 1 | 2 | 3 | 4 | 5;
 
 export type Papel = 'analista' | 'revisor' | 'auditor';
 
-export type Forca = 'PRIMARIA' | 'DERIVADA' | 'DECLARATORIA';
+// CONTEXTO (§6.4): revisão, registro de versões, índice, registro de atividades — não prova o resultado.
+export type Forca = 'PRIMARIA' | 'DERIVADA' | 'DECLARATORIA' | 'CONTEXTO';
 
 export type SentidoCitacao = 'FAVORAVEL' | 'CONTRARIA' | 'CONTRADITORIA';
 
@@ -64,8 +65,9 @@ export interface Evidencia {
   conteudoEsperado: string;
   observacaoInventario: string;
   forcaProbatoria: Forca;
-  statusInventario: string;          // "Localizada" -> exibir como "presente"
-  textoExtraido: string | null;
+  statusInventario: string;          // "Localizada" -> exibir como "presente", nunca "comprovado" (§6.5)
+  presente: boolean;                 // o arquivo está no pacote (ausente = lacuna declarada)
+  textoExtraido: string | null;      // null = ausente ou ilegível
   secoes?: Array<{ ancora: string; titulo: string; inicio: number; fim: number }>;
 }
 
@@ -85,8 +87,8 @@ export interface Ensaio {
   versao: string;
   metrica: string;
   operacao: 'contagem' | 'media' | 'mediana' | 'diferenca_maior_menor' | 'percentil_95' | 'valor_observado' | 'indicador_precalculado';
-  valor: number;
-  baseDeCalculo: number;
+  valor: number | null;              // null = vazio no resultado (vazio ≠ 0)
+  baseDeCalculo: number | null;
   descricaoBase: string;
   taxaPercentual: number | null;
   unidade: string;
@@ -130,6 +132,9 @@ export interface Confronto {
   prevalencia: 'A' | 'B' | 'NAO_RESOLVIDO';
   razaoDaPrevalencia: string;
   textoFormatado: string;
+  /** Razão e texto que o motor sugeriu, preservados quando o analista resolve (resolucao.ts). */
+  razaoSugerida?: string;
+  textoSugerido?: string;
   resolvidoPor: string | null;
   resolvidoEm: string | null;
 }
@@ -137,8 +142,12 @@ export interface Confronto {
 export interface PontoDoParecer {
   criterioId: number;
   nomeCriterio: string;
-  estadoProposto: EstadoCriterio;
+  estadoProposto: EstadoCriterio | null; // null = sem marcador reconhecido → lacuna
   porqueProposto: string;
+  /** Quem redigiu o porquê proposto. Ausente = motor. */
+  porqueOrigem?: 'MOTOR' | 'IA';
+  /** O porquê determinístico, preservado quando a IA redige o proposto. */
+  porqueMotor?: string;
   citacoesPropostas: Citacao[];
   normasAplicadas: string[];
   confianca: 'ALTA' | 'MEDIA' | 'BAIXA';
@@ -166,7 +175,7 @@ export interface Caso {
   id: string;
   titulo: string;
   equipe: string;
-  duracaoSemanas: number;
+  duracaoSemanas: number | null;    // null = não declarada no pacote (lacuna), nunca um valor padrão
   origem: 'REFERENCIA' | 'ANALISE';
   situacao: SituacaoCaso;
   resumo?: ResumoDossie;
@@ -186,6 +195,16 @@ export interface Caso {
     duracaoMs: number;
   };
   parecerAtualId: string | null;
+}
+
+export interface EnriquecimentoIA {
+  modelo: string;
+  em: string;
+  criteriosEnriquecidos: number[];
+  /** Critérios em que a IA não foi usada e por quê (descarte, rede, sem chave). */
+  naoEnriquecidos: Array<{ criterioId: number; motivo: string }>;
+  /** Lacunas apontadas pela IA. Ficam no registro, não entram em `lacunas` sem o analista. */
+  lacunasSugeridas?: Array<{ criterioId: number; texto: string }>;
 }
 
 export interface Parecer {
@@ -213,6 +232,9 @@ export interface Parecer {
   citacoesContrarias: Citacao[];
   confrontos: Confronto[];
   lacunas: string[];
+
+  /** Registro do enriquecimento por IA (§8.2). Ausente = só motor determinístico. */
+  enriquecimentoIA?: EnriquecimentoIA;
 
   // Metadados e congelamento
   geradoEm: string;

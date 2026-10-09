@@ -45,7 +45,7 @@ O próprio `DESIGN-SYSTEM.md` estabeleceu uma blindagem inviolável nas seções
 └───────────────────────────────────┴────────────────────────────────────┘
 ```
 
-Toda a inteligência do LASTRO (motor determinístico, os 20 casos canônicos que testamos, o extrator de PDF recém-corrigido, o Copilot Gemini e o armazenamento) reside nas camadas de modelo e controle. A mudança proposta é **estritamente de apresentação (camada de visualização / CSS / classes Tailwind)**.
+Toda a inteligência do LASTRO (motor determinístico, os 20 casos canônicos que testamos, o extrator de PDF recém-corrigido, o assistente Lastrinho (Gemini) e o armazenamento) reside nas camadas de modelo e controle. A mudança proposta é **estritamente de apresentação (camada de visualização / CSS / classes Tailwind)**.
 
 ---
 

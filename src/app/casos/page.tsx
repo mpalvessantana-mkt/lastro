@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useCarregarNoCliente } from "@/lib/use-carregar-no-cliente";
 import Link from "next/link";
 import { obterCasos, obterParecerPorId } from "@/lib/casos-store";
 import { Caso, Parecer } from "@/types";
-import { Plus, Search, FolderKanban, CheckCircle2, Clock, AlertTriangle, FileText } from "lucide-react";
+import { Plus, Search, Clock } from "lucide-react";
 
 export default function CasosPage() {
   const [casos, setCasos] = useState<Caso[]>([]);
@@ -13,7 +14,7 @@ export default function CasosPage() {
   const [filtroClasse, setFiltroClasse] = useState("TODAS");
   const [filtroSituacao, setFiltroSituacao] = useState("TODAS");
 
-  useEffect(() => {
+  useCarregarNoCliente("casos", () => {
     const lista = obterCasos();
     setCasos(lista);
 
@@ -24,7 +25,7 @@ export default function CasosPage() {
       }
     }
     setPareceresMap(map);
-  }, []);
+  });
 
   const contagens = {
     elegivel: 0,
@@ -65,7 +66,7 @@ export default function CasosPage() {
   const getClasseBadge = (p: Parecer | null | undefined) => {
     if (!p) {
       return (
-        <span className="text-xs text-[#6B6A65] flex items-center gap-1">
+        <span className="text-xs text-[var(--c-6b6a65)] flex items-center gap-1">
           <Clock className="w-3 h-3 animate-spin" /> lendo arquivos...
         </span>
       );
@@ -73,27 +74,27 @@ export default function CasosPage() {
     const classe = p.classeFinal || p.classeProposta;
     if (classe === "ELEGIVEL") {
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-xs font-semibold bg-[#EBF5F0] text-[#2F6B4F] border border-[#A3D9BE]">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-xs font-semibold bg-[var(--c-ebf5f0)] text-[var(--c-2f6b4f)] border border-[var(--c-a3d9be)]">
           Elegível
         </span>
       );
     }
     if (classe === "COM_RESSALVAS") {
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-xs font-semibold bg-[#FFF8E7] text-[#B06C1E] border border-[#F4D089]">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-xs font-semibold bg-[var(--c-fff8e7)] text-[var(--c-b06c1e)] border border-[var(--c-f4d089)]">
           Com ressalvas
         </span>
       );
     }
     if (classe === "NAO_ELEGIVEL") {
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-xs font-semibold bg-[#F3F3F1] text-[#52504E] border border-[#E0DEDA]">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-xs font-semibold bg-[var(--c-f3f3f1)] text-[var(--c-52504e)] border border-[var(--c-e0deda)]">
           Não elegível
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-xs font-semibold bg-[#EFF6FF] text-[#3A5A78] border border-[#BFDBFE]">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-xs font-semibold bg-[var(--c-eff6ff)] text-[var(--c-3a5a78)] border border-[var(--c-bfdbfe)]">
         Evidência insuficiente
       </span>
     );
@@ -115,81 +116,52 @@ export default function CasosPage() {
       {/* Topo: Título da tela + Botão de Ação Primária */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-[#231F20] tracking-tight">
+          <h1 className="text-xl font-bold text-[var(--c-231f20)] tracking-tight">
             Casos em análise
           </h1>
-          <p className="text-xs text-[#52504E] mt-0.5">
-            Projetos submetidos para emissão e homologação do parecer técnico na Lei do Bem
+          <p className="text-sm text-[var(--c-6b6762)] mt-0.5">
+            Pareceres da Lei do Bem em revisão e homologados
           </p>
         </div>
 
         <Link
           href="/casos/novo"
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#A6193C] hover:bg-[#851430] text-white text-xs font-semibold rounded-[4px] shadow-2xs transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[var(--c-a6193c)] hover:bg-[var(--c-851430)] text-white text-xs font-semibold rounded-[4px] shadow-2xs transition-colors"
         >
           <Plus className="w-4 h-4" />
           Analisar novo projeto
         </Link>
       </div>
 
-      {/* 5 Blocos de Contagem com Filetes Superiores (TELA 7) */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        {/* Elegível */}
-        <div className="bg-white border border-[#E0DEDA] rounded-[4px] p-3 relative overflow-hidden shadow-2xs">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-[#2F6B4F]" />
-          <div className="text-2xl font-bold text-[#231F20] mt-1">{contagens.elegivel}</div>
-          <div className="text-[11px] font-semibold text-[#2F6B4F] uppercase tracking-wider mt-0.5">
-            Elegível
+      {/* Contagem por classe e em revisão: uma faixa só */}
+      <dl className="flex flex-wrap gap-x-8 gap-y-3 rounded-xl bg-[var(--c-ffffff)] px-5 py-4">
+        {[
+          { rotulo: "Elegível", valor: contagens.elegivel, cor: "bg-[var(--c-2f6b4f)]" },
+          { rotulo: "Com ressalvas", valor: contagens.ressalvas, cor: "bg-[var(--c-b06c1e)]" },
+          { rotulo: "Não elegível", valor: contagens.naoElegivel, cor: "bg-[var(--c-52504e)]" },
+          { rotulo: "Evidência insuficiente", valor: contagens.insuficiente, cor: "bg-[var(--c-3a5a78)]" },
+          { rotulo: "Em revisão", valor: contagens.emRevisao, cor: "bg-[var(--c-a6193c)]" }
+        ].map(({ rotulo, valor, cor }) => (
+          <div key={rotulo} className="flex items-baseline gap-2">
+            <dd className="text-2xl font-semibold text-[var(--c-231f20)] tabular-nums">{valor}</dd>
+            <dt className="flex items-center gap-1.5 text-xs text-[var(--c-6b6762)]">
+              <span className={`h-2 w-2 rounded-full ${cor}`} aria-hidden="true" />
+              {rotulo}
+            </dt>
           </div>
-        </div>
-
-        {/* Com ressalvas */}
-        <div className="bg-white border border-[#E0DEDA] rounded-[4px] p-3 relative overflow-hidden shadow-2xs">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-[#B06C1E]" />
-          <div className="text-2xl font-bold text-[#231F20] mt-1">{contagens.ressalvas}</div>
-          <div className="text-[11px] font-semibold text-[#B06C1E] uppercase tracking-wider mt-0.5">
-            Com ressalvas
-          </div>
-        </div>
-
-        {/* Não elegível */}
-        <div className="bg-white border border-[#E0DEDA] rounded-[4px] p-3 relative overflow-hidden shadow-2xs">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-[#52504E]" />
-          <div className="text-2xl font-bold text-[#231F20] mt-1">{contagens.naoElegivel}</div>
-          <div className="text-[11px] font-semibold text-[#52504E] uppercase tracking-wider mt-0.5">
-            Não elegível
-          </div>
-        </div>
-
-        {/* Evidência insuficiente */}
-        <div className="bg-white border border-[#E0DEDA] rounded-[4px] p-3 relative overflow-hidden shadow-2xs">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-[#3A5A78]" />
-          <div className="text-2xl font-bold text-[#231F20] mt-1">{contagens.insuficiente}</div>
-          <div className="text-[11px] font-semibold text-[#3A5A78] uppercase tracking-wider mt-0.5">
-            Evidência insuficiente
-          </div>
-        </div>
-
-        {/* Em revisão */}
-        <div className="bg-white border border-[#E0DEDA] rounded-[4px] p-3 relative overflow-hidden shadow-2xs col-span-2 sm:col-span-1">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-[#A6193C]" />
-          <div className="text-2xl font-bold text-[#231F20] mt-1">{contagens.emRevisao}</div>
-          <div className="text-[11px] font-semibold text-[#A6193C] uppercase tracking-wider mt-0.5">
-            Em revisão
-          </div>
-        </div>
-      </div>
+        ))}
+      </dl>
 
       {/* Barra de Filtros Discreta */}
-      <div className="bg-white border border-[#E0DEDA] rounded-[4px] p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-2xs">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-[#52504E] absolute left-3 top-2.5" />
+          <Search className="w-4 h-4 text-[var(--c-96918a)] absolute left-3 top-2.5" />
           <input
             type="text"
             placeholder="Buscar por ID, título ou equipe..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="w-full text-xs pl-9 pr-3 py-1.5 bg-[#F3F3F1] border border-[#E0DEDA] rounded-[4px] focus:outline-none focus:border-[#A6193C]"
+            className="w-full text-sm pl-9 pr-3 py-2 bg-[var(--c-ffffff)] text-[var(--c-231f20)] placeholder:text-[var(--c-96918a)] border border-[var(--c-e0deda)] rounded-lg focus:outline-none focus:border-[var(--c-a6193c)]"
           />
         </div>
 
@@ -197,7 +169,7 @@ export default function CasosPage() {
           <select
             value={filtroClasse}
             onChange={(e) => setFiltroClasse(e.target.value)}
-            className="text-xs bg-[#F3F3F1] border border-[#E0DEDA] rounded-[4px] px-2.5 py-1.5 font-medium text-[#231F20] focus:outline-none focus:border-[#A6193C]"
+            className="text-sm bg-[var(--c-ffffff)] border border-[var(--c-e0deda)] rounded-lg px-2.5 py-2 text-[var(--c-231f20)] focus:outline-none focus:border-[var(--c-a6193c)]"
           >
             <option value="TODAS">Todas as classes</option>
             <option value="ELEGIVEL">Elegível</option>
@@ -209,7 +181,7 @@ export default function CasosPage() {
           <select
             value={filtroSituacao}
             onChange={(e) => setFiltroSituacao(e.target.value)}
-            className="text-xs bg-[#F3F3F1] border border-[#E0DEDA] rounded-[4px] px-2.5 py-1.5 font-medium text-[#231F20] focus:outline-none focus:border-[#A6193C]"
+            className="text-sm bg-[var(--c-ffffff)] border border-[var(--c-e0deda)] rounded-lg px-2.5 py-2 text-[var(--c-231f20)] focus:outline-none focus:border-[var(--c-a6193c)]"
           >
             <option value="TODAS">Todas as situações</option>
             <option value="EM_REVISAO">Em revisão</option>
@@ -220,10 +192,10 @@ export default function CasosPage() {
       </div>
 
       {/* Tabela Densa Institucional (TELA 7) */}
-      <div className="bg-white border border-[#E0DEDA] rounded-[4px] overflow-hidden shadow-2xs">
+      <div className="bg-[var(--c-ffffff)] rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs table-dense">
-            <thead className="bg-[#F3F3F1] border-b border-[#E0DEDA] text-[#52504E] font-semibold text-[11px] uppercase tracking-wider">
+            <thead className="border-b border-[var(--c-e0deda)] text-[var(--c-6b6762)] font-medium text-[11px] uppercase tracking-wider">
               <tr>
                 <th className="py-2.5 px-3">Caso</th>
                 <th className="py-2.5 px-3">Título do Projeto</th>
@@ -234,11 +206,13 @@ export default function CasosPage() {
                 <th className="py-2.5 px-3 text-right">Ação</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E0DEDA]">
+            <tbody className="divide-y divide-[var(--c-e0deda)]">
               {casosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-[#52504E]">
-                    Nenhum caso encontrado com os filtros aplicados.
+                  <td colSpan={7} className="py-10 text-center text-sm text-[var(--c-6b6762)]">
+                    {casos.length === 0
+                      ? "Nenhum caso analisado ainda. Use “Analisar novo projeto” para começar."
+                      : "Nenhum caso encontrado com os filtros aplicados."}
                   </td>
                 </tr>
               ) : (
@@ -248,34 +222,34 @@ export default function CasosPage() {
                   return (
                     <tr
                       key={caso.id}
-                      className="hover:bg-[#FAF9F7] transition-colors group cursor-pointer"
+                      className="hover:bg-[var(--c-faf9f7)] transition-colors group cursor-pointer"
                     >
-                      <td className="py-2.5 px-3 font-mono font-bold text-[#A6193C]">
+                      <td className="py-2.5 px-3 font-mono font-bold text-[var(--c-a6193c)]">
                         <Link href={`/casos/${caso.id}/parecer`} className="hover:underline">
                           {caso.id}
                         </Link>
                       </td>
-                      <td className="py-2.5 px-3 font-medium text-[#231F20] max-w-xs truncate">
+                      <td className="py-2.5 px-3 font-medium text-[var(--c-231f20)] max-w-xs lg:max-w-xl truncate">
                         <Link href={`/casos/${caso.id}/parecer`} className="hover:underline">
                           {caso.titulo}
                         </Link>
                       </td>
-                      <td className="py-2.5 px-3 text-[#52504E]">{caso.equipe}</td>
+                      <td className="py-2.5 px-3 text-[var(--c-52504e)]">{caso.equipe}</td>
                       <td className="py-2.5 px-3">{getClasseBadge(p)}</td>
                       <td className="py-2.5 px-3">
-                        <span className="capitalize text-[#231F20] font-medium">
+                        <span className="capitalize text-[var(--c-231f20)] font-medium">
                           {caso.situacao.toLowerCase().replace("_", " ")}
                         </span>
                       </td>
                       <td className="py-2.5 px-3">
-                        <span className="font-mono text-[11px] text-[#52504E] bg-[#F3F3F1] px-1.5 py-0.5 rounded-[4px] border border-[#E0DEDA]">
+                        <span className="font-mono text-[11px] text-[var(--c-52504e)] bg-[var(--c-f3f3f1)] px-1.5 py-0.5 rounded-[4px] border border-[var(--c-e0deda)]">
                           {pontosRev}
                         </span>
                       </td>
                       <td className="py-2.5 px-3 text-right">
                         <Link
                           href={`/casos/${caso.id}/parecer`}
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#A6193C] hover:text-[#851430] hover:underline"
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--c-a6193c)] hover:text-[var(--c-851430)] hover:underline"
                         >
                           Ver parecer →
                         </Link>

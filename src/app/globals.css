@@ -1,11 +1,24 @@
 @import "tailwindcss";
 
+/* Variante dark: do Tailwind ligada à classe .dark no <html> (definida antes da pintura em layout.tsx). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* As classes font-sans, font-serif e font-mono do Tailwind leem as mesmas variaveis do sistema,
+   entao nenhuma tela escapa da tipografia definida em --fonte-*. */
+@theme inline {
+  --font-sans: var(--fonte-ui);
+  --font-serif: var(--fonte-doc);
+  --font-mono: var(--fonte-id);
+}
+
 @layer base {
   :root {
     /* 4.1 Camada de marca — do brand book BNB */
     --marca-granada: #A6193C;
     --marca-granada-escuro: #7E122D;
     --marca-laranja: #FF8A22;
+    /* Superfícies de marca (painel do login, destaques): vermelho no claro, vinho no escuro */
+    --marca-painel: #A71633;
 
     /* 4.2 Camada de superfície */
     --papel: #FFFFFF;
@@ -27,9 +40,13 @@
     --alerta-fundo: #FDF4EC;
 
     /* 5. Tipografia */
-    --fonte-ui: "Heebo", system-ui, -apple-system, sans-serif;
-    --fonte-doc: "Spectral", Georgia, serif;
-    --fonte-id: "IBM Plex Mono", ui-monospace, monospace;
+    /* Arial: fonte dos documentos e manuais do Banco do Nordeste (ex.: Manual de Prestacao de Contas
+       do ETENE, que pede "tipo de letra: arial"). Fontes do sistema, sem download. A familia usada
+       no portal web do banco nao pode ser confirmada; para trocar, mude so estas tres linhas. */
+    --fonte-ui: Arial, "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif;
+    --fonte-doc: var(--fonte-ui);
+    /* So para identificadores, hashes e texto bruto de arquivo (distingue 0/O e 1/l). */
+    --fonte-id: ui-monospace, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
 
     /* Raio e Espaçamento */
     --raio: 4px;
@@ -43,16 +60,181 @@
 
     /* Elevação Real */
     --elevado: 0 2px 8px rgba(35, 31, 32, 0.12);
+
+    color-scheme: light;
+
+    /* Paleta das telas. Cada cor fixa usada nos componentes é uma variável com o mesmo valor
+       no tema claro; o tema escuro redefine só aqui. Nome = hex do tema claro. */
+    --c-f3f3f1: #F3F3F1;
+    --c-ffffff: #FFFFFF;
+    --c-fbfbf8: #FBFBF8;
+    --c-fafaf8: #FAFAF8;
+    --c-faf9f7: #FAF9F7;
+    --c-f7f7f4: #F7F7F4;
+    --c-f5f5f4: #F5F5F4;
+    --c-f0efea: #F0EFEA;
+    --c-edece7: #EDECE7;
+    --c-e0deda: #E0DEDA;
+    --c-e3e2dd: #E3E2DD;
+    --c-eaeaea: #EAEAEA;
+    --c-eae8e4: #EAE8E4;
+    --c-eadfdc: #EADFDC;
+    --c-d8d6d2: #D8D6D2;
+    --c-d6d5cf: #D6D5CF;
+    --c-d6d3d1: #D6D3D1;
+    --c-c9c6c1: #C9C6C1;
+    --c-231f20: #231F20;
+    --c-1a1a18: #1A1A18;
+    --c-2a1418: #2A1418;
+    --c-52504e: #52504E;
+    --c-44403c: #44403C;
+    --c-6b6a65: #6B6A65;
+    --c-6b6762: #6B6762;
+    --c-757371: #757371;
+    --c-74605f: #74605F;
+    --c-96918a: #96918A;
+    --c-a8a7a1: #A8A7A1;
+    --c-a6193c: #A6193C;
+    --c-a71633: #A71633;
+    --c-851430: #851430;
+    --c-7e122d: #7E122D;
+    --c-85112a: #85112A;
+    --c-6e0e22: #6E0E22;
+    --c-ff8a22: #FF8A22;
+    --c-f28c00: #F28C00;
+    --c-3d0c15: #3D0C15;
+    --c-4d111d: #4D111D;
+    --c-2f6b4f: #2F6B4F;
+    --c-0f5132: #0F5132;
+    --c-0b3d26: #0B3D26;
+    --c-ebf5f0: #EBF5F0;
+    --c-f4f8f5: #F4F8F5;
+    --c-a3d9be: #A3D9BE;
+    --c-b06c1e: #B06C1E;
+    --c-9a6700: #9A6700;
+    --c-fef9e7: #FEF9E7;
+    --c-fff8e7: #FFF8E7;
+    --c-fdf8f0: #FDF8F0;
+    --c-fff3e8: #FFF3E8;
+    --c-fdf4ec: #FDF4EC;
+    --c-f4d089: #F4D089;
+    --c-ead4b6: #EAD4B6;
+    --c-3a5a78: #3A5A78;
+    --c-2c4f7c: #2C4F7C;
+    --c-f0f5fa: #F0F5FA;
+    --c-eff6ff: #EFF6FF;
+    --c-c5d8ea: #C5D8EA;
+    --c-bfdbfe: #BFDBFE;
+    --c-c2410c: #C2410C;
+    --c-b42318: #B42318;
+  }
+
+  /* Tema escuro: vinho e fundos escuros, texto claro, vermelho e laranja nos destaques.
+     Só na tela — o documento impresso (PDF do parecer) sai sempre no tema claro. */
+  @media screen {
+    html.dark {
+      color-scheme: dark;
+
+      --papel: #211015;
+      --fundo: #160A0D;
+      --filete: #3A2128;
+      --filete-forte: #4D2C35;
+      --tinta: #F4EAEC;
+      --tinta-media: #B9A5A9;
+      --tinta-fraca: #8F7B80;
+      --marca-granada: #D63A56;
+      --marca-granada-escuro: #C2304C;
+      --marca-painel: #4D111D;
+      --classe-elegivel: #5BBF8C;
+      --classe-ressalvas: #E5A95F;
+      --classe-nao-elegivel: #D9C9CC;
+      --classe-insuficiente: #93B8DD;
+      --alerta: #F28B5B;
+      --alerta-fundo: #2A2012;
+      --elevado: 0 2px 10px rgba(0, 0, 0, 0.45);
+
+      --c-f3f3f1: #160A0D;
+      --c-ffffff: #211015;
+      --c-fbfbf8: #211015;
+      --c-fafaf8: #211015;
+      --c-faf9f7: #211015;
+      --c-f7f7f4: #2A151B;
+      --c-f5f5f4: #2A151B;
+      --c-f0efea: #2A151B;
+      --c-edece7: #2A151B;
+      --c-e0deda: #3A2128;
+      --c-e3e2dd: #3A2128;
+      --c-eaeaea: #3A2128;
+      --c-eae8e4: #3A2128;
+      --c-eadfdc: #3A2128;
+      --c-d8d6d2: #4D2C35;
+      --c-d6d5cf: #4D2C35;
+      --c-d6d3d1: #4D2C35;
+      --c-c9c6c1: #4D2C35;
+      --c-231f20: #F4EAEC;
+      --c-1a1a18: #F4EAEC;
+      --c-2a1418: #F4EAEC;
+      --c-52504e: #D9C9CC;
+      --c-44403c: #D9C9CC;
+      --c-6b6a65: #B9A5A9;
+      --c-6b6762: #B9A5A9;
+      --c-757371: #B9A5A9;
+      --c-74605f: #B9A5A9;
+      --c-96918a: #8F7B80;
+      --c-a8a7a1: #8F7B80;
+      --c-a6193c: #D63A56;
+      --c-a71633: #D63A56;
+      --c-851430: #C2304C;
+      --c-7e122d: #C2304C;
+      --c-85112a: #C2304C;
+      --c-6e0e22: #C2304C;
+      --c-ff8a22: #F2932E;
+      --c-f28c00: #F2932E;
+      --c-3d0c15: #3D0C15;
+      --c-4d111d: #4D111D;
+      --c-2f6b4f: #5BBF8C;
+      --c-0f5132: #3E9E6E;
+      --c-0b3d26: #2F7D57;
+      --c-ebf5f0: #14271D;
+      --c-f4f8f5: #14271D;
+      --c-a3d9be: #2D5A44;
+      --c-b06c1e: #E5A95F;
+      --c-9a6700: #E8BD4A;
+      --c-fef9e7: #2A2012;
+      --c-fff8e7: #2A2012;
+      --c-fdf8f0: #2A2012;
+      --c-fff3e8: #2A2012;
+      --c-fdf4ec: #2A2012;
+      --c-f4d089: #5E4A22;
+      --c-ead4b6: #5E4A22;
+      --c-3a5a78: #93B8DD;
+      --c-2c4f7c: #86ACDB;
+      --c-f0f5fa: #132131;
+      --c-eff6ff: #132131;
+      --c-c5d8ea: #2D4762;
+      --c-bfdbfe: #2D4762;
+      --c-c2410c: #F28B5B;
+      --c-b42318: #F2776A;
+    }
   }
 
   body {
     background-color: var(--fundo);
+    transition: background-color 160ms linear, color 160ms linear;
     color: var(--tinta);
     font-family: var(--fonte-ui);
     font-size: 14px;
     line-height: 1.6;
     font-feature-settings: "tnum" 1;
     -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Arial so tem regular e negrito: titulos pedem 700 para a hierarquia aparecer. */
+  h1, h2, h3, h4 {
+    font-family: var(--fonte-ui);
+    text-wrap: balance;
   }
 }
 
@@ -202,6 +384,26 @@
     animation: none;
     opacity: 1;
     transform: none;
+  }
+}
+
+/* Carrossel: aproximação lenta e contínua da foto ativa (efeito Ken Burns) */
+.carrossel-aproximar {
+  animation: carrossel-aproximar 6s ease-out forwards;
+}
+
+@keyframes carrossel-aproximar {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carrossel-aproximar {
+    animation: none;
   }
 }
 

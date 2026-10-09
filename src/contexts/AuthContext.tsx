@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState } from "react";
+import { useCarregarNoCliente } from "@/lib/use-carregar-no-cliente";
 import { Papel } from "@/types";
 
 export interface Usuario {
@@ -46,12 +47,12 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [papel, setPapel] = useState<Papel>("analista");
 
-  useEffect(() => {
+  useCarregarNoCliente("papel", () => {
     const salvo = localStorage.getItem("lastro_papel_ativo") as Papel;
     if (salvo && USUARIOS_DEMO[salvo]) {
       setPapel(salvo);
     }
-  }, []);
+  });
 
   const trocarPapel = (novoPapel: Papel) => {
     setPapel(novoPapel);

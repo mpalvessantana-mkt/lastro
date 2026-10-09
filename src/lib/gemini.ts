@@ -1,6 +1,25 @@
-import { GoogleGenAI } from "@google/genai";
-import { z } from "zod";
-import { validarNormaId } from "@/motor/corpus";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import { validarRespostaIA, jsonSchemaExtracao, type ExtracaoTrechoOutput } from "@/motor/schemas";
+
+// Camada de IA (§8.2): enriquecimento descartável. Só roda no servidor — a chave
+// nunca vai para o navegador. Qualquer falha devolve usouIA: false e o motor
+// determinístico segue sozinho; nunca é erro bloqueante.
+
+export { ExtracaoTrechoSchema, type ExtracaoTrechoOutput } from "@/motor/schemas";
+
+export const MODELO_IA = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+const TIMEOUT_MS = 30_000;
+
+/**
+ * Raciocínio interno do modelo. A tarefa é extração literal + redação curta: com LOW a chamada cai
+ * de ~17 s para ~3,5 s (medido no PRJ13) e a saída continua passando na validação. GEMINI_THINKING
+ * troca o nível sem deploy de código; "PADRAO" devolve ao padrão do modelo.
+ */
+export function configuracaoRaciocinio(): { thinkingConfig?: { thinkingLevel: ThinkingLevel } } {
+  const nivel = (process.env.GEMINI_THINKING || "LOW").toUpperCase();
+  if (nivel === "PADRAO" || !(nivel in ThinkingLevel)) return {};
+  return { thinkingConfig: { thinkingLevel: nivel as ThinkingLevel } };
+}
 
 const SYSTEM_PROMPT = `Você é um assistente de extração e redação documental para análise preliminar de enquadramento na Lei do Bem. Você NÃO classifica, NÃO conclui e NÃO decide se um projeto é elegível, com ressalvas, não elegível ou de evidência insuficiente. Sua saída é uma PROPOSTA que um analista humano vai revisar.
 
@@ -17,114 +36,39 @@ REGRAS ABSOLUTAS:
 
 Responda exclusivamente no schema JSON fornecido.`;
 
-export const ExtracaoTrechoSchema = z.object({
-  trechos: z.array(
-    z.object({
-      evidenciaId: z.string(),
-      seletor: z.string().nullable(),
-      trecho: z.string(),
-      sentido: z.enum(["FAVORAVEL", "CONTRARIA", "CONTRADITORIA"]),
-      normaId: z.string().nullable()
-    })
-  ),
-  porqueRedigido: z.string(),
-  lacunaIdentificada: z.string().nullable()
-});
+export type ResultadoIA = { output: ExtracaoTrechoOutput | null; usouIA: boolean; motivo: string | null };
 
-export type ExtracaoTrechoOutput = z.infer<typeof ExtracaoTrechoSchema>;
+function semIA(motivo: string): ResultadoIA {
+  return { output: null, usouIA: false, motivo };
+}
 
-export const AvaliacaoProjetoSchema = z.object({
-  criterios: z.object({
-    c1_novidade: z.object({
-      estado: z.enum(["DEMONSTRADA NO RECORTE", "NÃO DEMONSTRADA", "INDETERMINADA"]),
-      justificativa: z.string(),
-      trechoCitado: z.string().nullable().optional()
-    }),
-    c2_criatividade: z.object({
-      estado: z.enum(["DEMONSTRADA NO RECORTE", "NÃO DEMONSTRADA", "INDETERMINADA"]),
-      justificativa: z.string(),
-      trechoCitado: z.string().nullable().optional()
-    }),
-    c3_incerteza: z.object({
-      estado: z.enum(["INVESTIGADA", "NÃO CARACTERIZADA", "ALEGADA, NÃO VERIFICÁVEL"]),
-      justificativa: z.string(),
-      trechoCitado: z.string().nullable().optional()
-    }),
-    c4_sistematicidade: z.object({
-      estado: z.enum(["DOCUMENTADA", "DOCUMENTADA COMO ACEITE", "PARCIAL"]),
-      justificativa: z.string(),
-      trechoCitado: z.string().nullable().optional()
-    }),
-    c5_transferibilidade: z.object({
-      estado: z.enum([
-        "DOCUMENTADA NO ESCOPO",
-        "DOCUMENTADA COM LIMITE",
-        "DOCUMENTADA PARA A CONFIGURAÇÃO",
-        "INSUFICIENTE PARA O NÚCLEO ALEGADO"
-      ]),
-      justificativa: z.string(),
-      trechoCitado: z.string().nullable().optional()
-    })
-  }),
-  atividadesDeRotinaIdentificadas: z.array(z.string()).optional().default([]),
-  barreiraTecnologicaSuperada: z.string().nullable().optional(),
-  recomendacaoGeral: z.string().optional().default(""),
-  lacunasDeEvidencia: z.array(z.string()).optional().default([])
-});
+/** Texto enviado à IA: cada evidência rotulada pelo seu ID nativo. */
+export function rotularEvidencias(textosPorId: Record<string, string>): string {
+  return Object.entries(textosPorId).map(([id, texto]) => `[${id}]\n${texto}`).join("\n\n");
+}
 
-export type AvaliacaoProjetoOutput = z.infer<typeof AvaliacaoProjetoSchema>;
-
-const AVALIADOR_SYSTEM_PROMPT = `Você é o Avaliador Sênior de P&D e Inovação Tecnológica do Sistema LASTRO do Banco do Nordeste, especialista em auditoria técnica segundo o Manual de Frascati (OCDE), a Lei do Bem (Lei 11.196/2005, art. 17) e a Instrução Normativa RFB nº 1.187/2011.
-
-Sua missão é fornecer uma avaliação preliminar técnica, prudente e rastreável sobre o enquadramento de projetos pleiteando incentivos fiscais.
-
-PRINCÍPIOS DO MANUAL DE FRASCATI E LEI DO BEM:
-1. TESTE DO ESPECIALISTA (Frascati § 84): Para ser P&D, a solução NÃO pode ser óbvia para um especialista que domina as técnicas comumente utilizadas no setor. A atividade deve superar o estado da técnica.
-2. VEDAÇÕES EXPRESSAS DE SOFTWARE (Frascati § 141 e Glosas MCTI):
-   NÃO SÃO P&D:
-   - Desenvolvimento de aplicações corporativas usando métodos e ferramentas conhecidas (CRUD, telas, relatórios gerenciais);
-   - Parametrização, configuração ou adaptação de software/ERP de terceiros;
-   - Suporte a sistemas, depuração de erros de rotina (bug fixing) e elaboração de manuais de usuário;
-   - Migração ou conversão para nova linguagem ou versão de banco de dados;
-   - Integração convencional via APIs padrão sem avanço algorítmico.
-   -> Se o projeto consistir predominantemente nisso: Critérios 1 e 2 são NÃO DEMONSTRADA, Critério 3 é NÃO CARACTERIZADA, Critério 4 é DOCUMENTADA COMO ACEITE e Critério 5 é DOCUMENTADA PARA A CONFIGURAÇÃO (Classe: Não Elegível).
-3. INSUCESSO TÉCNICO É P&D (Frascati § 138): Se houve método e teste real de hipótese que não atingiu a meta planejada, o Critério 5 é DOCUMENTADA COM LIMITE (Classe: Com Ressalvas).
-4. PRINCÍPIO DA PRUDÊNCIA FISCAL (ÔNUS DA PROVA): Se os documentos forem genéricos, sem hipótese clara, sem comparador ou sem dados dos ensaios, a classificação é EVIDÊNCIA INSUFICIENTE (Critérios em INDETERMINADA / ALEGADA NÃO VERIFICÁVEL / PARCIAL / INSUFICIENTE PARA O NÚCLEO ALEGADO). NUNCA aprove projetos sem base documental.
-
-Responda rigorosamente no schema JSON definido.`;
-
-function obterInstanciaGenAI(): GoogleGenAI | null {
-  const apiKey =
-    process.env.GEMINI_API_KEY ||
-    process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
-    "";
-  if (!apiKey || process.env.NEXT_PUBLIC_MODO_SEM_REDE === "true") {
-    return null;
-  }
-  try {
-    return new GoogleGenAI({ apiKey });
-  } catch (err) {
-    console.warn("Não foi possível inicializar SDK do Gemini, usando fallback determinístico:", err);
-    return null;
-  }
+export function modoSemRede(): boolean {
+  return process.env.MODO_SEM_REDE === "true" || process.env.NEXT_PUBLIC_MODO_SEM_REDE === "true";
 }
 
 /**
- * Enriquece a fundamentação de um critério usando Gemini 2.5 Flash
- * Se falhar na validação Zod ou literalidade, descarta e usa fallback determinístico.
+ * Enriquece a fundamentação de um critério. A resposta só é aproveitada se passar
+ * inteira por `validarRespostaIA` (schema, literalidade, IDs do pacote, corpus).
+ * Com `textosPorId`, cada trecho precisa estar na evidência que ele cita.
  */
 export async function enriquecerComIA(
   criterioId: number,
   estadoSugerido: string,
   textoEvidencias: string,
-  idsValidos: string[]
-): Promise<{ output: ExtracaoTrechoOutput | null; usouIA: boolean }> {
-  const ai = obterInstanciaGenAI();
-  if (!ai) {
-    return { output: null, usouIA: false };
-  }
+  idsValidos: string[],
+  textosPorId?: Record<string, string>
+): Promise<ResultadoIA> {
+  if (modoSemRede()) return semIA("MODO_SEM_REDE ativo");
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return semIA("GEMINI_API_KEY não configurada");
 
   try {
+    const ai = new GoogleGenAI({ apiKey });
     const prompt = `Contexto do Projeto:
 Critério ID: ${criterioId}
 Estado Proposto pelo Motor: ${estadoSugerido}
@@ -138,138 +82,35 @@ IDs Válidos no Pacote: ${idsValidos.join(", ")}
 Extraia trechos LITERAIS que fundamentam este estado e redija o "porquê" no padrão formal.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.8-flash",
+      model: MODELO_IA,
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_PROMPT,
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        responseJsonSchema: jsonSchemaExtracao(),
+        ...configuracaoRaciocinio(),
+        abortSignal: AbortSignal.timeout(TIMEOUT_MS)
       }
     });
 
-    const textoResposta = response.text?.trim() || "";
-    if (!textoResposta) {
-      return { output: null, usouIA: false };
+    const texto = response.text?.trim();
+    if (!texto) return semIA("resposta vazia");
+
+    let bruta: unknown;
+    try {
+      bruta = JSON.parse(texto);
+    } catch {
+      return semIA("resposta não é JSON");
     }
 
-    const parsedJson = JSON.parse(textoResposta);
-    const validado = ExtracaoTrechoSchema.safeParse(parsedJson);
-
-    if (!validado.success) {
-      console.warn("Resposta da IA falhou no schema Zod, descartando:", validado.error);
-      return { output: null, usouIA: false };
+    const validacao = validarRespostaIA(bruta, { textoEvidencias, idsValidos, textosPorId });
+    if (!validacao.ok) {
+      console.warn(`Resposta da IA descartada (${validacao.motivo}); segue o motor determinístico.`);
+      return semIA(`descartada: ${validacao.motivo}`);
     }
-
-    // Regra 1: Validação de Literalidade (indexOf !== -1)
-    for (const item of validado.data.trechos) {
-      if (textoEvidencias.indexOf(item.trecho) === -1) {
-        console.warn(`Trecho da IA não é literal, descartando: "${item.trecho.slice(0, 40)}..."`);
-        return { output: null, usouIA: false };
-      }
-      if (item.normaId && !validarNormaId(item.normaId)) {
-        console.warn(`Norma ID inválida gerada pela IA, descartando: ${item.normaId}`);
-        return { output: null, usouIA: false };
-      }
-    }
-
-    return { output: validado.data, usouIA: true };
+    return { output: validacao.output, usouIA: true, motivo: null };
   } catch (err) {
-    console.warn("Erro na chamada do Gemini AI, mantendo motor determinístico:", err);
-    return { output: null, usouIA: false };
+    console.warn("Falha na chamada do Gemini; segue o motor determinístico:", err);
+    return semIA("falha na chamada");
   }
 }
-
-/**
- * Avalia o projeto de forma profunda e crítica usando Gemini 3.8 Flash,
- * julgando os 5 critérios concorrentes de Frascati e as vedações de software da Lei do Bem.
- */
-export async function avaliarProjetoComIA(dados: {
-  casoId: string;
-  titulo: string;
-  textoCompleto: string;
-}): Promise<{ avaliacao: AvaliacaoProjetoOutput | null; usouIA: boolean }> {
-  const ai = obterInstanciaGenAI();
-  if (!ai) {
-    return { avaliacao: null, usouIA: false };
-  }
-
-  try {
-    const prompt = `Avalie o seguinte projeto para fins de incentivos da Lei do Bem e Manual de Frascati:
-
-ID do Caso: ${dados.casoId}
-Título do Projeto: ${dados.titulo}
-
-Evidências / Documentação Técnica do Projeto:
-"""
-${dados.textoCompleto.slice(0, 20000)}
-"""
-
-Retorne OBRIGATORIAMENTE um objeto JSON estrito com esta estrutura exata:
-{
-  "criterios": {
-    "c1_novidade": {
-      "estado": "DEMONSTRADA NO RECORTE",
-      "justificativa": "Fundamentação de novidade técnica frente ao estado da técnica",
-      "trechoCitado": null
-    },
-    "c2_criatividade": {
-      "estado": "DEMONSTRADA NO RECORTE",
-      "justificativa": "Fundamentação da criatividade técnica e hipótese não óbvia",
-      "trechoCitado": null
-    },
-    "c3_incerteza": {
-      "estado": "INVESTIGADA",
-      "justificativa": "Fundamentação da incerteza tecnológica investigada",
-      "trechoCitado": null
-    },
-    "c4_sistematicidade": {
-      "estado": "DOCUMENTADA",
-      "justificativa": "Fundamentação da sistematicidade e ensaios estruturados",
-      "trechoCitado": null
-    },
-    "c5_transferibilidade": {
-      "estado": "DOCUMENTADA NO ESCOPO",
-      "justificativa": "Fundamentação de transferibilidade e limites da conclusão",
-      "trechoCitado": null
-    }
-  },
-  "atividadesDeRotinaIdentificadas": [],
-  "barreiraTecnologicaSuperada": "Descrição resumida da barreira ou null",
-  "recomendacaoGeral": "Síntese do enquadramento",
-  "lacunasDeEvidencia": []
-}
-
-Estados permitidos:
-- c1_novidade e c2_criatividade: "DEMONSTRADA NO RECORTE" | "NÃO DEMONSTRADA" | "INDETERMINADA"
-- c3_incerteza: "INVESTIGADA" | "NÃO CARACTERIZADA" | "ALEGADA, NÃO VERIFICÁVEL"
-- c4_sistematicidade: "DOCUMENTADA" | "DOCUMENTADA COMO ACEITE" | "PARCIAL"
-- c5_transferibilidade: "DOCUMENTADA NO ESCOPO" | "DOCUMENTADA COM LIMITE" | "DOCUMENTADA PARA A CONFIGURAÇÃO" | "INSUFICIENTE PARA O NÚCLEO ALEGADO"`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3.8-flash",
-      contents: prompt,
-      config: {
-        systemInstruction: AVALIADOR_SYSTEM_PROMPT,
-        responseMimeType: "application/json"
-      }
-    });
-
-    const textoResposta = response.text?.trim() || "";
-    if (!textoResposta) {
-      return { avaliacao: null, usouIA: false };
-    }
-
-    const parsed = JSON.parse(textoResposta);
-    const validado = AvaliacaoProjetoSchema.safeParse(parsed);
-
-    if (!validado.success) {
-      console.warn("Avaliação da IA falhou no schema Zod:", validado.error);
-      return { avaliacao: null, usouIA: false };
-    }
-
-    return { avaliacao: validado.data, usouIA: true };
-  } catch (err) {
-    console.warn("Erro ao executar avaliarProjetoComIA com Gemini Flash:", err);
-    return { avaliacao: null, usouIA: false };
-  }
-}
-

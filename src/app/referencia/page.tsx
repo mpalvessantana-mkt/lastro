@@ -2,29 +2,29 @@
 
 import React, { useState } from "react";
 import { HISTORICOS_REFERENCIA, ProjetoHistorico } from "@/lib/referencia-data";
-import { Search, Filter, BookOpen, Scale, ArrowRight, X } from "lucide-react";
+import { Search } from "lucide-react";
 
 const CORES_CLASSES: Record<string, { border: string; text: string; bg: string }> = {
-  "Elegível": { border: "#2F6B4F", text: "#2F6B4F", bg: "#EBF5F0" },
-  "Com ressalvas": { border: "#B06C1E", text: "#B06C1E", bg: "#FFF8E7" },
-  "Não elegível": { border: "#52504E", text: "#52504E", bg: "#F3F3F1" },
-  "Evidência insuficiente": { border: "#3A5A78", text: "#3A5A78", bg: "#EFF6FF" }
+  "Elegível": { border: "var(--c-2f6b4f)", text: "var(--c-2f6b4f)", bg: "var(--c-ebf5f0)" },
+  "Com ressalvas": { border: "var(--c-b06c1e)", text: "var(--c-b06c1e)", bg: "var(--c-fff8e7)" },
+  "Não elegível": { border: "var(--c-52504e)", text: "var(--c-52504e)", bg: "var(--c-f3f3f1)" },
+  "Evidência insuficiente": { border: "var(--c-3a5a78)", text: "var(--c-3a5a78)", bg: "var(--c-eff6ff)" }
 };
 
 const CORES_ESTADOS: Record<string, string> = {
-  "DEMONSTRADA NO RECORTE": "#2F6B4F",
-  "INVESTIGADA": "#2F6B4F",
-  "DOCUMENTADA": "#2F6B4F",
-  "DOCUMENTADA NO ESCOPO": "#2F6B4F",
-  "DOCUMENTADA COM LIMITE": "#B06C1E",
-  "NÃO DEMONSTRADA": "#52504E",
-  "NÃO CARACTERIZADA": "#52504E",
-  "DOCUMENTADA COMO ACEITE": "#52504E",
-  "DOCUMENTADA PARA A CONFIGURAÇÃO": "#52504E",
-  "INDETERMINADA": "#3A5A78",
-  "ALEGADA, NÃO VERIFICÁVEL": "#3A5A78",
-  "PARCIAL": "#3A5A78",
-  "INSUFICIENTE PARA O NÚCLEO ALEGADO": "#3A5A78"
+  "DEMONSTRADA NO RECORTE": "var(--c-2f6b4f)",
+  "INVESTIGADA": "var(--c-2f6b4f)",
+  "DOCUMENTADA": "var(--c-2f6b4f)",
+  "DOCUMENTADA NO ESCOPO": "var(--c-2f6b4f)",
+  "DOCUMENTADA COM LIMITE": "var(--c-b06c1e)",
+  "NÃO DEMONSTRADA": "var(--c-52504e)",
+  "NÃO CARACTERIZADA": "var(--c-52504e)",
+  "DOCUMENTADA COMO ACEITE": "var(--c-52504e)",
+  "DOCUMENTADA PARA A CONFIGURAÇÃO": "var(--c-52504e)",
+  "INDETERMINADA": "var(--c-3a5a78)",
+  "ALEGADA, NÃO VERIFICÁVEL": "var(--c-3a5a78)",
+  "PARCIAL": "var(--c-3a5a78)",
+  "INSUFICIENTE PARA O NÚCLEO ALEGADO": "var(--c-3a5a78)"
 };
 
 export default function ReferenciaPage() {
@@ -45,12 +45,12 @@ export default function ReferenciaPage() {
     <div className="space-y-6 font-ui">
       {/* Topo Institucional (TELA 8) */}
       <div>
-        <h1 className="text-xl font-bold text-[#231F20] tracking-tight">
+        <h1 className="text-xl font-bold text-[var(--c-231f20)] tracking-tight">
           Base de referência — Precedentes de P&D
         </h1>
-        <p className="text-xs text-[#52504E] mt-0.5">
+        <p className="text-xs text-[var(--c-52504e)] mt-0.5">
           20 projetos classificados · Usados para calibrar a régua e consultar precedentes.{" "}
-          <strong className="text-[#231F20]">Nunca entram no cálculo de um caso novo.</strong>
+          <strong className="text-[var(--c-231f20)]">Nunca entram no cálculo de um caso novo.</strong>
         </p>
       </div>
 
@@ -58,15 +58,15 @@ export default function ReferenciaPage() {
         {/* Coluna Esquerda: Filtros e Grade de Cards (lg:col-span-8) */}
         <div className="lg:col-span-8 space-y-4">
           {/* Barra de Filtros */}
-          <div className="bg-white border border-[#E0DEDA] rounded-[4px] p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="bg-[var(--c-ffffff)] border border-[var(--c-e0deda)] rounded-[4px] p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-2xs">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-[#52504E] absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-[var(--c-52504e)] absolute left-3 top-2.5" />
               <input
                 type="text"
                 placeholder="Buscar precedente por ID ou título..."
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
-                className="w-full text-xs pl-9 pr-3 py-1.5 bg-[#F3F3F1] border border-[#E0DEDA] rounded-[4px] focus:outline-none focus:border-[#A6193C]"
+                className="w-full text-xs pl-9 pr-3 py-1.5 bg-[var(--c-f3f3f1)] border border-[var(--c-e0deda)] rounded-[4px] focus:outline-none focus:border-[var(--c-a6193c)]"
               />
             </div>
 
@@ -78,8 +78,8 @@ export default function ReferenciaPage() {
                     onClick={() => setFiltroClasse(cl)}
                     className={`px-2 py-1 rounded-[4px] text-[11px] font-semibold transition-colors ${
                       filtroClasse === cl
-                        ? "bg-[#A6193C] text-white"
-                        : "bg-[#F3F3F1] text-[#52504E] hover:bg-[#E0DEDA]"
+                        ? "bg-[var(--c-a6193c)] text-white"
+                        : "bg-[var(--c-f3f3f1)] text-[var(--c-52504e)] hover:bg-[var(--c-e0deda)]"
                     }`}
                   >
                     {cl === "TODAS" ? "Todas" : cl}
@@ -99,10 +99,10 @@ export default function ReferenciaPage() {
                 <div
                   key={item.id}
                   onClick={() => setSelecionado(item)}
-                  className={`bg-white border rounded-[4px] p-3 cursor-pointer transition-all shadow-2xs flex flex-col justify-between h-36 relative overflow-hidden ${
+                  className={`bg-[var(--c-ffffff)] border rounded-[4px] p-3 cursor-pointer transition-all shadow-2xs flex flex-col justify-between h-36 relative overflow-hidden ${
                     ativo
-                      ? "ring-2 ring-[#A6193C] border-[#A6193C]"
-                      : "border-[#E0DEDA] hover:border-[#FF8A22]"
+                      ? "ring-2 ring-[var(--c-a6193c)] border-[var(--c-a6193c)]"
+                      : "border-[var(--c-e0deda)] hover:border-[var(--c-ff8a22)]"
                   }`}
                 >
                   <div
@@ -112,7 +112,7 @@ export default function ReferenciaPage() {
 
                   <div>
                     <div className="flex items-center justify-between text-xs mt-1">
-                      <span className="font-mono font-bold text-[#231F20]">{item.id}</span>
+                      <span className="font-mono font-bold text-[var(--c-231f20)]">{item.id}</span>
                       <span
                         className="text-[10px] font-semibold px-1.5 py-0.2 rounded-[2px]"
                         style={{
@@ -124,19 +124,19 @@ export default function ReferenciaPage() {
                       </span>
                     </div>
 
-                    <h3 className="text-xs font-semibold text-[#231F20] line-clamp-2 mt-1.5 leading-snug">
+                    <h3 className="text-xs font-semibold text-[var(--c-231f20)] line-clamp-2 mt-1.5 leading-snug">
                       {item.titulo}
                     </h3>
                   </div>
 
                   {/* Assinatura Visual: 5 quadradinhos dos estados */}
-                  <div className="pt-2 border-t border-[#E0DEDA] flex items-center justify-between">
-                    <span className="text-[9px] uppercase font-bold text-[#52504E]">
+                  <div className="pt-2 border-t border-[var(--c-e0deda)] flex items-center justify-between">
+                    <span className="text-[9px] uppercase font-bold text-[var(--c-52504e)]">
                       Assinatura:
                     </span>
                     <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map((cId) => {
-                        const cor = CORES_ESTADOS[item.estados[cId]] || "#52504E";
+                        const cor = CORES_ESTADOS[item.estados[cId]] || "var(--c-52504e)";
                         return (
                           <div
                             key={cId}
@@ -155,12 +155,12 @@ export default function ReferenciaPage() {
         </div>
 
         {/* Coluna Direita: Painel Lateral com Detalhes da Fundamentação (TELA 8) */}
-        <div className="lg:col-span-4 bg-white border border-[#E0DEDA] rounded-[4px] p-5 shadow-2xs space-y-4 sticky top-20">
+        <div className="lg:col-span-4 bg-[var(--c-ffffff)] border border-[var(--c-e0deda)] rounded-[4px] p-5 shadow-2xs space-y-4 sticky top-20">
           {selecionado ? (
             <>
-              <div className="border-b border-[#E0DEDA] pb-3">
+              <div className="border-b border-[var(--c-e0deda)] pb-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-sm font-bold text-[#A6193C]">
+                  <span className="font-mono text-sm font-bold text-[var(--c-a6193c)]">
                     {selecionado.id}
                   </span>
                   <span
@@ -174,56 +174,56 @@ export default function ReferenciaPage() {
                     {selecionado.classificacao}
                   </span>
                 </div>
-                <h2 className="text-sm font-bold text-[#231F20] mt-1 leading-snug">
+                <h2 className="text-sm font-bold text-[var(--c-231f20)] mt-1 leading-snug">
                   {selecionado.titulo}
                 </h2>
               </div>
 
               {/* Justificativa Geral */}
               <div>
-                <span className="text-[10px] font-bold text-[#52504E] uppercase tracking-wider block mb-1">
+                <span className="text-[10px] font-bold text-[var(--c-52504e)] uppercase tracking-wider block mb-1">
                   Justificativa da Decisão
                 </span>
-                <p className="text-xs text-[#231F20] leading-relaxed bg-[#F3F3F1] p-3 rounded-[4px] border border-[#E0DEDA]">
+                <p className="text-xs text-[var(--c-231f20)] leading-relaxed bg-[var(--c-f3f3f1)] p-3 rounded-[4px] border border-[var(--c-e0deda)]">
                   {selecionado.justificativa}
                 </p>
               </div>
 
               {/* Limite da Conclusão */}
               <div>
-                <span className="text-[10px] font-bold text-[#52504E] uppercase tracking-wider block mb-1">
+                <span className="text-[10px] font-bold text-[var(--c-52504e)] uppercase tracking-wider block mb-1">
                   Limite da Conclusão
                 </span>
-                <p className="text-xs text-[#231F20] leading-relaxed bg-[#F3F3F1] p-3 rounded-[4px] border border-[#E0DEDA]">
+                <p className="text-xs text-[var(--c-231f20)] leading-relaxed bg-[var(--c-f3f3f1)] p-3 rounded-[4px] border border-[var(--c-e0deda)]">
                   {selecionado.limite}
                 </p>
               </div>
 
               {/* Estados dos Cinco Critérios */}
               <div className="space-y-2">
-                <span className="text-[10px] font-bold text-[#52504E] uppercase tracking-wider block">
+                <span className="text-[10px] font-bold text-[var(--c-52504e)] uppercase tracking-wider block">
                   Os Cinco Critérios no Histórico
                 </span>
                 {[1, 2, 3, 4, 5].map((cId) => (
                   <div
                     key={cId}
-                    className="p-2.5 rounded-[4px] border border-[#E0DEDA] bg-white text-xs space-y-1"
+                    className="p-2.5 rounded-[4px] border border-[var(--c-e0deda)] bg-[var(--c-ffffff)] text-xs space-y-1"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-[#231F20]">
+                      <span className="font-semibold text-[var(--c-231f20)]">
                         Critério {cId}
                       </span>
                       <span
                         className="text-[10px] font-bold px-1.5 py-0.2 rounded-[2px]"
                         style={{
-                          backgroundColor: "#F3F3F1",
-                          color: CORES_ESTADOS[selecionado.estados[cId]] || "#231F20"
+                          backgroundColor: "var(--c-f3f3f1)",
+                          color: CORES_ESTADOS[selecionado.estados[cId]] || "var(--c-231f20)"
                         }}
                       >
                         {selecionado.estados[cId]}
                       </span>
                     </div>
-                    <p className="text-[11px] text-[#52504E] line-clamp-2 leading-tight">
+                    <p className="text-[11px] text-[var(--c-52504e)] line-clamp-2 leading-tight">
                       {selecionado.justificativas[cId]}
                     </p>
                   </div>
@@ -231,7 +231,7 @@ export default function ReferenciaPage() {
               </div>
             </>
           ) : (
-            <div className="py-12 text-center text-xs text-[#52504E]">
+            <div className="py-12 text-center text-xs text-[var(--c-52504e)]">
               Selecione um projeto histórico para consultar os fundamentos de referência.
             </div>
           )}

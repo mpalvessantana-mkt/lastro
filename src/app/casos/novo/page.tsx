@@ -2,14 +2,13 @@
 
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { UploadCloud, Folder, FileCheck, CheckCircle2, Clock, AlertCircle, ArrowRight, Play } from "lucide-react";
+import { UploadCloud, Folder, CheckCircle2, Clock } from "lucide-react";
 import JSZip from "jszip";
-import { analisarPacote, comporClasse, PacoteArquivos } from "@/motor";
-import { extrairDadosDossie } from "@/motor/parsers/dossie";
-import { extrairTextoCompletoPDF } from "@/lib/pdf-parser";
-import { EstadoCriterio } from "@/types";
-import { AvaliacaoProjetoOutput } from "@/lib/gemini";
-import { adicionarCasoComParecer, salvarArquivosCaso, registrarAuditoria } from "@/lib/casos-store";
+import { analisarPacote } from "@/motor";
+import { hashPacote, ArquivoBruto } from "@/motor/hash";
+import { lerPacote } from "@/motor/parsers/pacote";
+import { adicionarCasoComParecer, registrarAuditoria } from "@/lib/casos-store";
+import { enriquecerParecer } from "@/lib/enriquecer-parecer";
 import { HISTORICOS_REFERENCIA } from "@/lib/referencia-data";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -43,133 +42,46 @@ export default function NovoCasoPage() {
   const { usuario } = useAuth();
   const [processando, setProcessando] = useState(false);
   const [etapaAtual, setEtapaAtual] = useState(0);
-  const [arquivosLidos, setArquivosLidos] = useState<string[]>([]);
+  const [, setArquivosLidos] = useState<string[]>([]);
   const [casoIdEmAnalise, setCasoIdEmAnalise] = useState("PRJ27");
   const [tituloEmAnalise, setTituloEmAnalise] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
 
-  const processarArquivosTexto = async (arquivos: PacoteArquivos, idProjeto: string, tituloProjeto: string) => {
+  const processarArquivosTexto = async (brutos: ArquivoBruto[], idProjeto: string, tituloProjeto: string) => {
     setProcessando(true);
     setCasoIdEmAnalise(idProjeto);
     setTituloEmAnalise(tituloProjeto);
 
-    // Iniciar avaliação inteligente com Gemini Flash em paralelo com o stepper visual
-    const promessaIA = (async () => {
-      try {
-        let textoTotal = "";
-        for (const [nome, conteudo] of Object.entries(arquivos)) {
-          if (nome.toLowerCase().endsWith(".pdf")) {
-            const decodificado = extrairTextoCompletoPDF(conteudo);
-            if (decodificado) textoTotal += `\n--- [${nome}] ---\n` + decodificado.slice(0, 10000);
-          } else if (nome.endsWith(".md") || nome.endsWith(".txt") || nome.endsWith(".json")) {
-            textoTotal += `\n--- [${nome}] ---\n` + conteudo.slice(0, 10000);
-          }
-        }
+    // Etapas reais do processamento: cada uma acende quando o trabalho dela começa.
+    // pintar() cede um quadro ao navegador para a etapa aparecer antes do trabalho síncrono.
+    const pintar = () => new Promise((r) => setTimeout(r, 0));
+    const inicio = performance.now();
+    setArquivosLidos(brutos.map((b) => b.caminho));
 
-        if (textoTotal.trim().length > 50) {
-          const res = await fetch("/api/ia/avaliar", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              casoId: idProjeto,
-              titulo: tituloProjeto,
-              textoCompleto: textoTotal
-            })
-          });
-
-          if (res.ok) {
-            const dados = await res.json();
-            return dados.avaliacao as AvaliacaoProjetoOutput | null;
-          }
-        }
-        return null;
-      } catch (err) {
-        console.warn("Avaliação de IA não retornou a tempo, usando motor determinístico:", err);
-        return null;
-      }
-    })();
-
-    // Avançar as etapas visuais servindo como loader natural para o Gemini Flash (~3s no total)
+    // 0 · Leitura e indexação: hash sobre os bytes originais (não sobre o texto) e leitura pelo
+    // tipo (PDF → texto, XLSX → CSV). Sem crypto.subtle (fora de https/localhost) o motor registra
+    // a lacuna do hash; arquivo ilegível vira lacuna, não erro.
     setEtapaAtual(0);
-    setArquivosLidos(Object.keys(arquivos));
-    await new Promise((r) => setTimeout(r, 500));
+    await pintar();
+    const sha256 = await hashPacote(brutos).then((h) => h.sha256, () => undefined);
+    const { arquivos, naoLidos } = await lerPacote(brutos);
 
+    // 1–3 · Motor determinístico: seções, aritmética e confronto rodam juntos em analisarPacote.
     setEtapaAtual(1);
-    await new Promise((r) => setTimeout(r, 600));
+    await pintar();
+    const resultado = analisarPacote(idProjeto, tituloProjeto, arquivos, { sha256Pacote: sha256, naoLidos });
 
-    setEtapaAtual(2);
-    await new Promise((r) => setTimeout(r, 600));
-
-    setEtapaAtual(3);
-    await new Promise((r) => setTimeout(r, 600));
-
+    // 4 · Camada de IA (§8.2): só redige o porquê e acrescenta trechos validados.
+    // Sem chave, sem rede ou com resposta descartada, segue o parecer do motor.
     setEtapaAtual(4);
-
-    // Aguardar conclusão da IA (Gemini Flash) ou timeout de segurança de 15s
-    const avaliacaoIA = await Promise.race([
-      promessaIA,
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 15000))
-    ]);
-
-    // Executar motor determinístico recalibrado com prudência fiscal
-    const resultado = analisarPacote(idProjeto, tituloProjeto, arquivos);
-
-    // Se a IA tiver concluído a análise dos 5 critérios, aplicar os pareceres refinados
-    if (avaliacaoIA && avaliacaoIA.criterios) {
-      const c = avaliacaoIA.criterios;
-      const novosEstados: Record<number, EstadoCriterio> = {
-        1: c.c1_novidade.estado,
-        2: c.c2_criatividade.estado,
-        3: c.c3_incerteza.estado,
-        4: c.c4_sistematicidade.estado,
-        5: c.c5_transferibilidade.estado
-      };
-
-      const novaComp = comporClasse(novosEstados);
-      if (novaComp.classe !== "CONFLITO" && novaComp.classe !== "INCOMPLETO") {
-        resultado.parecer.classeProposta = novaComp.classe;
-      }
-
-      const lista = [
-        { id: 1, dado: c.c1_novidade },
-        { id: 2, dado: c.c2_criatividade },
-        { id: 3, dado: c.c3_incerteza },
-        { id: 4, dado: c.c4_sistematicidade },
-        { id: 5, dado: c.c5_transferibilidade }
-      ];
-
-      for (const item of lista) {
-        if (resultado.parecer.pontos[item.id]) {
-          resultado.parecer.pontos[item.id].estadoProposto = item.dado.estado;
-          resultado.parecer.pontos[item.id].porqueProposto = item.dado.justificativa;
-          resultado.parecer.pontos[item.id].confianca = "ALTA";
-          if (item.dado.trechoCitado && resultado.parecer.pontos[item.id].citacoesPropostas.length > 0) {
-            resultado.parecer.pontos[item.id].citacoesPropostas[0].trecho = item.dado.trechoCitado;
-            resultado.parecer.pontos[item.id].citacoesPropostas[0].origem = "IA";
-          }
-        }
-      }
-
-      if (avaliacaoIA.lacunasDeEvidencia && avaliacaoIA.lacunasDeEvidencia.length > 0) {
-        resultado.parecer.lacunas = [
-          ...resultado.parecer.lacunas,
-          ...avaliacaoIA.lacunasDeEvidencia
-        ];
-      }
-
-      if (avaliacaoIA.atividadesDeRotinaIdentificadas && avaliacaoIA.atividadesDeRotinaIdentificadas.length > 0) {
-        resultado.parecer.lacunas.push(
-          `Vedações de Rotina (§ 141 Frascati): ${avaliacaoIA.atividadesDeRotinaIdentificadas.join("; ")}`
-        );
-      }
-
-      resultado.parecer.geradoPor = "LASTRO AI (Gemini Flash + Motor Recalibrado)";
-    }
+    await pintar();
+    const parecer = await enriquecerParecer(resultado.parecer, resultado.evidencias);
+    // Tempo do upload ao parecer (o que o analista espera), não só o do motor.
+    resultado.caso.leitura.duracaoMs = Math.round(performance.now() - inicio);
 
     // Salvar no repositório de casos
-    adicionarCasoComParecer(resultado.caso, resultado.parecer);
-    salvarArquivosCaso(idProjeto, arquivos);
+    adicionarCasoComParecer(resultado.caso, parecer, resultado.evidencias);
 
     registrarAuditoria({
       casoId: idProjeto,
@@ -184,17 +96,22 @@ export default function NovoCasoPage() {
 
     registrarAuditoria({
       casoId: idProjeto,
-      ator: resultado.parecer.geradoPor,
+      ator: "LASTRO Motor v1.0",
       papel: "analista",
       acao: "PARECER_PROPOSTO",
-      alvo: resultado.parecer.id,
+      alvo: parecer.id,
       antes: null,
-      depois: { classe: resultado.parecer.classeProposta },
+      depois: {
+        classe: parecer.classeProposta,
+        ia: parecer.enriquecimentoIA
+          ? { modelo: parecer.enriquecimentoIA.modelo, criterios: parecer.enriquecimentoIA.criteriosEnriquecidos }
+          : null
+      },
       em: new Date().toISOString()
     });
 
     setEtapaAtual(5); // Concluído
-    await new Promise((r) => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 300));
     router.push(`/casos/${idProjeto}/parecer`);
   };
 
@@ -204,34 +121,26 @@ export default function NovoCasoPage() {
 
     const zip = new JSZip();
     const zipData = await zip.loadAsync(file);
-    const arquivos: PacoteArquivos = {};
+    const brutos: ArquivoBruto[] = [];
 
     let detectedId = file.name.replace(/\.[^/.]+$/, "").toUpperCase();
     if (!detectedId.startsWith("PRJ")) detectedId = "PRJ28";
 
     for (const [pathName, zipEntry] of Object.entries(zipData.files)) {
       if (!zipEntry.dir) {
-        let content: string;
-        if (pathName.toLowerCase().endsWith(".pdf")) {
-          content = await zipEntry.async("binarystring");
-        } else {
-          content = await zipEntry.async("text");
-        }
-        arquivos[pathName] = content;
+        const bytes = await zipEntry.async("uint8array");
+        brutos.push({ caminho: pathName, bytes });
       }
     }
 
-    const dadosDossie = extrairDadosDossie(detectedId, arquivos);
-    const tituloFinal = dadosDossie.titulo || `Projeto ${detectedId}`;
-    setTituloEmAnalise(tituloFinal);
-    processarArquivosTexto(arquivos, detectedId, tituloFinal);
+    processarArquivosTexto(brutos, detectedId, `Projeto ${detectedId}`);
   };
 
   const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const arquivos: PacoteArquivos = {};
+    const brutos: ArquivoBruto[] = [];
     let detectedId = "PRJ29";
 
     for (let i = 0; i < files.length; i++) {
@@ -241,23 +150,11 @@ export default function NovoCasoPage() {
       if (partes[0].startsWith("PRJ")) detectedId = partes[0].toUpperCase();
       const relativeClean = partes.slice(1).join("/") || f.name;
 
-      let content: string;
-      if (f.name.toLowerCase().endsWith(".pdf")) {
-        content = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve((reader.result as string) || "");
-          reader.readAsBinaryString(f);
-        });
-      } else {
-        content = await f.text();
-      }
-      arquivos[relativeClean] = content;
+      const bytes = new Uint8Array(await f.arrayBuffer());
+      brutos.push({ caminho: relativeClean, bytes });
     }
 
-    const dadosDossie = extrairDadosDossie(detectedId, arquivos);
-    const tituloFinal = dadosDossie.titulo || `Projeto ${detectedId}`;
-    setTituloEmAnalise(tituloFinal);
-    processarArquivosTexto(arquivos, detectedId, tituloFinal);
+    processarArquivosTexto(brutos, detectedId, `Projeto ${detectedId}`);
   };
 
   // Demonstração rápida direta com um dos 20 casos históricos de teste
@@ -269,45 +166,44 @@ export default function NovoCasoPage() {
     const tituloReal = historico?.titulo || titulo;
     setTituloEmAnalise(tituloReal);
 
-    // Carregar arquivos sintéticos via fetch de API ou geração estruturada
-    const arquivosDemo: PacoteArquivos = {};
-    ARQUIVOS_CANONICOS.forEach((arq) => {
-      arquivosDemo[arq] = `Conteúdo indexado de ${arq} para ${projetoId}`;
-    });
-
-    // Injetar método real do projeto para o motor fatiar as 7 seções
-    const res = await fetch(`/api/metodo-demo?id=${projetoId}`).catch(() => null);
-    if (res && res.ok) {
-      const txt = await res.text();
-      arquivosDemo["evidencias/metodo.md"] = txt;
+    // Pacote real de Arquivos/ (bytes originais): o mesmo caminho do upload de pasta
+    const res = await fetch(`/api/pacote-demo?id=${projetoId}`).catch(() => null);
+    if (!res?.ok) {
+      setProcessando(false);
+      alert(`O pacote ${projetoId} não está disponível no servidor.`);
+      return;
     }
-
-    processarArquivosTexto(arquivosDemo, projetoId, tituloReal);
+    const { arquivos } = (await res.json()) as { arquivos: Array<{ caminho: string; base64: string }> };
+    const brutosDemo = arquivos.map(({ caminho, base64 }) => ({
+      caminho,
+      bytes: Uint8Array.from(atob(base64), (ch) => ch.charCodeAt(0))
+    }));
+    processarArquivosTexto(brutosDemo, projetoId, tituloReal);
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 font-ui">
       <div>
-        <h1 className="text-xl font-bold text-[#231F20] tracking-tight">
+        <h1 className="text-xl font-bold text-[var(--c-231f20)] tracking-tight">
           Acervo — Upload de novo projeto
         </h1>
-        <p className="text-xs text-[#52504E] mt-0.5">
+        <p className="text-xs text-[var(--c-52504e)] mt-0.5">
           Arraste a pasta descompactada ou o arquivo .zip com os 14 arquivos do projeto
         </p>
       </div>
 
       {/* Área Retangular Tracejada (TELA 3) */}
       {!processando ? (
-        <div className="bg-white border-2 border-dashed border-[#E0DEDA] rounded-[4px] p-8 sm:p-12 text-center shadow-2xs space-y-4">
-          <div className="w-14 h-14 mx-auto rounded-[4px] bg-[#F3F3F1] flex items-center justify-center text-[#A6193C]">
+        <div className="bg-[var(--c-ffffff)] border-2 border-dashed border-[var(--c-e0deda)] rounded-[4px] p-8 sm:p-12 text-center shadow-2xs space-y-4">
+          <div className="w-14 h-14 mx-auto rounded-[4px] bg-[var(--c-f3f3f1)] flex items-center justify-center text-[var(--c-a6193c)]">
             <Folder className="w-7 h-7" />
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-[#231F20]">
+            <h3 className="text-sm font-semibold text-[var(--c-231f20)]">
               Arraste a pasta do projeto ou um arquivo .zip
             </h3>
-            <p className="text-xs text-[#52504E] mt-1">
+            <p className="text-xs text-[var(--c-52504e)] mt-1">
               PRJ21 a PRJ40 · 14 arquivos por pacote conforme estrutura canônica
             </p>
           </div>
@@ -322,7 +218,7 @@ export default function NovoCasoPage() {
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 bg-[#A6193C] hover:bg-[#851430] text-white text-xs font-semibold rounded-[4px] shadow-2xs transition-colors inline-flex items-center gap-2"
+              className="px-4 py-2 bg-[var(--c-a6193c)] hover:bg-[var(--c-851430)] text-white text-xs font-semibold rounded-[4px] shadow-2xs transition-colors inline-flex items-center gap-2"
             >
               <UploadCloud className="w-4 h-4" /> Selecionar arquivo .ZIP
             </button>
@@ -331,53 +227,53 @@ export default function NovoCasoPage() {
               type="file"
               ref={folderInputRef}
               onChange={handleFolderUpload}
-              {...({ webkitdirectory: "", directory: "" } as any)}
+              {...({ webkitdirectory: "", directory: "" } as React.InputHTMLAttributes<HTMLInputElement>)}
               className="hidden"
             />
             <button
               onClick={() => folderInputRef.current?.click()}
-              className="px-4 py-2 bg-white border border-[#E0DEDA] hover:bg-[#F3F3F1] text-[#231F20] text-xs font-semibold rounded-[4px] shadow-2xs transition-colors inline-flex items-center gap-2"
+              className="px-4 py-2 bg-[var(--c-ffffff)] border border-[var(--c-e0deda)] hover:bg-[var(--c-f3f3f1)] text-[var(--c-231f20)] text-xs font-semibold rounded-[4px] shadow-2xs transition-colors inline-flex items-center gap-2"
             >
-              <Folder className="w-4 h-4 text-[#52504E]" /> Selecionar Pasta
+              <Folder className="w-4 h-4 text-[var(--c-52504e)]" /> Selecionar Pasta
             </button>
           </div>
 
           {/* Atalho de Demonstração Rápida no Palco */}
-          <div className="pt-6 border-t border-[#E0DEDA] max-w-lg mx-auto">
-            <span className="text-[11px] font-semibold text-[#52504E] uppercase tracking-wider block mb-2">
+          <div className="pt-6 border-t border-[var(--c-e0deda)] max-w-lg mx-auto">
+            <span className="text-[11px] font-semibold text-[var(--c-52504e)] uppercase tracking-wider block mb-2">
               Demonstração ao Vivo no Pitch (Atalho sem upload de arquivo)
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 onClick={() => carregarCasoDemo("PRJ02", "Detecção de divergências entre razão e extrato")}
-                className="p-2 text-left bg-[#F3F3F1] hover:bg-[#EBF5F0] border border-[#E0DEDA] rounded-[4px] transition-colors"
+                className="p-2 text-left bg-[var(--c-f3f3f1)] hover:bg-[var(--c-ebf5f0)] border border-[var(--c-e0deda)] rounded-[4px] transition-colors"
               >
-                <div className="font-mono font-bold text-xs text-[#2F6B4F]">PRJ02</div>
-                <div className="text-[10px] text-[#52504E] truncate">Elegível</div>
+                <div className="font-mono font-bold text-xs text-[var(--c-2f6b4f)]">PRJ02</div>
+                <div className="text-[10px] text-[var(--c-52504e)] truncate">Elegível</div>
               </button>
 
               <button
                 onClick={() => carregarCasoDemo("PRJ05", "Aplicativo de proposta com trabalho offline")}
-                className="p-2 text-left bg-[#F3F3F1] hover:bg-[#FFF8E7] border border-[#E0DEDA] rounded-[4px] transition-colors"
+                className="p-2 text-left bg-[var(--c-f3f3f1)] hover:bg-[var(--c-fff8e7)] border border-[var(--c-e0deda)] rounded-[4px] transition-colors"
               >
-                <div className="font-mono font-bold text-xs text-[#B06C1E]">PRJ05</div>
-                <div className="text-[10px] text-[#52504E] truncate">Com ressalvas</div>
+                <div className="font-mono font-bold text-xs text-[var(--c-b06c1e)]">PRJ05</div>
+                <div className="text-[10px] text-[var(--c-52504e)] truncate">Com ressalvas</div>
               </button>
 
               <button
                 onClick={() => carregarCasoDemo("PRJ01", "Reprocessamento seguro de mensagens duplicadas")}
-                className="p-2 text-left bg-[#F3F3F1] hover:bg-[#FAF9F7] border border-[#E0DEDA] rounded-[4px] transition-colors"
+                className="p-2 text-left bg-[var(--c-f3f3f1)] hover:bg-[var(--c-faf9f7)] border border-[var(--c-e0deda)] rounded-[4px] transition-colors"
               >
-                <div className="font-mono font-bold text-xs text-[#52504E]">PRJ01</div>
-                <div className="text-[10px] text-[#52504E] truncate">Não elegível</div>
+                <div className="font-mono font-bold text-xs text-[var(--c-52504e)]">PRJ01</div>
+                <div className="text-[10px] text-[var(--c-52504e)] truncate">Não elegível</div>
               </button>
 
               <button
                 onClick={() => carregarCasoDemo("PRJ08", "Monitoramento de canais em agências remotas")}
-                className="p-2 text-left bg-[#F3F3F1] hover:bg-[#EFF6FF] border border-[#E0DEDA] rounded-[4px] transition-colors"
+                className="p-2 text-left bg-[var(--c-f3f3f1)] hover:bg-[var(--c-eff6ff)] border border-[var(--c-e0deda)] rounded-[4px] transition-colors"
               >
-                <div className="font-mono font-bold text-xs text-[#3A5A78]">PRJ08</div>
-                <div className="text-[10px] text-[#52504E] truncate">Evid. insuf.</div>
+                <div className="font-mono font-bold text-xs text-[var(--c-3a5a78)]">PRJ08</div>
+                <div className="text-[10px] text-[var(--c-52504e)] truncate">Evid. insuf.</div>
               </button>
             </div>
           </div>
@@ -385,12 +281,12 @@ export default function NovoCasoPage() {
       ) : (
         /* Painel de Progresso em Andamento (TELA 3) */
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 bg-white border border-[#E0DEDA] rounded-[4px] p-6 shadow-2xs space-y-5">
+          <div className="md:col-span-2 bg-[var(--c-ffffff)] border border-[var(--c-e0deda)] rounded-[4px] p-6 shadow-2xs space-y-5">
             <div>
-              <h2 className="text-base font-bold text-[#231F20] tracking-tight">
+              <h2 className="text-base font-bold text-[var(--c-231f20)] tracking-tight">
                 Lendo {casoIdEmAnalise}{tituloEmAnalise ? ` · ${tituloEmAnalise}` : ""}...
               </h2>
-              <p className="text-xs text-[#52504E]">
+              <p className="text-xs text-[var(--c-52504e)]">
                 Executando extração determinística, conferência de aritmética e matriz de regras
               </p>
             </div>
@@ -402,19 +298,19 @@ export default function NovoCasoPage() {
                 return (
                   <div key={idx} className="flex items-center gap-3 text-xs">
                     {concluido ? (
-                      <CheckCircle2 className="w-4 h-4 text-[#2F6B4F] shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-[var(--c-2f6b4f)] shrink-0" />
                     ) : emAndamento ? (
-                      <Clock className="w-4 h-4 text-[#FF8A22] animate-spin shrink-0" />
+                      <Clock className="w-4 h-4 text-[var(--c-ff8a22)] animate-spin shrink-0" />
                     ) : (
-                      <div className="w-4 h-4 rounded-full border border-[#E0DEDA] shrink-0" />
+                      <div className="w-4 h-4 rounded-full border border-[var(--c-e0deda)] shrink-0" />
                     )}
                     <span
                       className={`${
                         concluido
-                          ? "text-[#231F20] font-medium"
+                          ? "text-[var(--c-231f20)] font-medium"
                           : emAndamento
-                          ? "text-[#FF8A22] font-semibold"
-                          : "text-[#757371]"
+                          ? "text-[var(--c-ff8a22)] font-semibold"
+                          : "text-[var(--c-757371)]"
                       }`}
                     >
                       {etapa}
@@ -426,15 +322,15 @@ export default function NovoCasoPage() {
           </div>
 
           {/* Coluna Estreita com Checklist dos Arquivos */}
-          <div className="bg-white border border-[#E0DEDA] rounded-[4px] p-5 shadow-2xs">
-            <h3 className="text-xs font-semibold text-[#231F20] uppercase tracking-wider mb-3">
+          <div className="bg-[var(--c-ffffff)] border border-[var(--c-e0deda)] rounded-[4px] p-5 shadow-2xs">
+            <h3 className="text-xs font-semibold text-[var(--c-231f20)] uppercase tracking-wider mb-3">
               Arquivos do Pacote (14)
             </h3>
             <ul className="space-y-1.5 font-mono text-[11px]">
               {ARQUIVOS_CANONICOS.map((arq, idx) => (
-                <li key={idx} className="flex items-center justify-between text-[#52504E]">
+                <li key={idx} className="flex items-center justify-between text-[var(--c-52504e)]">
                   <span className="truncate pr-2">{arq}</span>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2F6B4F] shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[var(--c-2f6b4f)] shrink-0" />
                 </li>
               ))}
             </ul>

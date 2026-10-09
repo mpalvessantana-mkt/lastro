@@ -8,8 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "validar": "tsx scripts/validar-motor.ts",
-    "validar:novos": "tsx scripts/testar-casos-novos.ts",
-    "seed:normas": "tsx scripts/seed-normas.ts"
+    "test": "tsx --test \"src/**/*.test.ts\"",
+    "seed:normas": "tsx scripts/seed-normas.ts",
+    "cronometrar": "tsx --env-file-if-exists=.env.local scripts/cronometrar.ts"
   },
   "dependencies": {
     "@google/genai": "^2.28.0",
@@ -18,9 +19,10 @@
     "lucide-react": "^1.52.0",
     "next": "16.4.0",
     "papaparse": "^5.7.0",
+    "pdfjs-dist": "6.3.289",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "xlsx": "^0.18.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -35,5 +37,15 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "@firebase/util": false,
+    "@google/genai": false,
+    "protobufjs": false,
+    "unrs-resolver": false
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.6"
   }
 }
